@@ -4,8 +4,9 @@
 
 Vagrant.configure(2) do |config|
 
+    # Data Center router
     config.vm.define "rtr1" do |node|
-      node.vm.box =  "IOS-XRv"
+      node.vm.box =  "IOS XRv"
       # gig0/0/0/0 connected to link2, gig00/0/1 connected to link1, gig0/0/0/2 connected to link3, auto-config not supported.
       node.vm.network :private_network, virtualbox__intnet: "link1", auto_config: false
       node.vm.provision :shell, path: "scripts/iperf.sh"
@@ -15,21 +16,25 @@ Vagrant.configure(2) do |config|
         s.args = ["/home/vagrant/rtr_config1"]
       end
     end
-
+    # PoP router
     config.vm.define "rtr2" do |node|
-      node.vm.box =  "IOS-XRv"
+      node.vm.box =  "IOS XRv"
       # gig0/0/0/0 connected to link1, gig0/0/0/1 connected to link3, auto-config not supported
       node.vm.network :private_network, virtualbox__intnet: "link1", auto_config: false
       node.vm.network :private_network, virtualbox__intnet: "link2", auto_config: false
       node.vm.provision :shell, path: "scripts/iperf.sh"
       node.vm.provision "file", source: "configs/rtr_config2", destination: "/home/vagrant/rtr_config2"
+      node.vm.provision "file", source: "demo.xml", destination: "/home/vagrant/demo.xml"
+      # Apply the XR configuration
       node.vm.provision "shell" do |s|
         s.path =  "scripts/apply_config.sh"
         s.args = ["/home/vagrant/rtr_config2"]
       end
+      # Launch the container
+      node.vm.provision :shell, path: "scripts/launch_container.sh"
     end
 
-
+    # Internet "router"
     config.vm.define "devbox" do |node|
       node.vm.box =  "ubuntu/trusty64"
       node.vm.network :private_network, virtualbox__intnet: "link2", ip: "11.1.1.20"
