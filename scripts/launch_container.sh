@@ -2,6 +2,7 @@
 
 # Grab the container from Lisa Roach's Box folder
 curl -L 'https://cisco.box.com/shared/static/w9di3jxh9znxiijc6t03wcnmu31irdni.gz' -o 'pathchecker_rootfs.tar.gz'
+
 # Launch the iPerf container
 cd /misc/app_host/
 sudo mkdir monitor
