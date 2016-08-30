@@ -1,0 +1,1 @@
+![Router Diagram](Vagrant/Router-Connectedness.png)
