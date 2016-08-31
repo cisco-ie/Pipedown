@@ -1,3 +1,8 @@
+tpa
+ address-family ipv4
+  update-source Loopback0
+ !
+!
 interface Loopback0
  ipv4 address 10.1.1.1 255.255.255.255
  ipv6 address 10:1:1::1/128
@@ -66,7 +71,7 @@ router bgp 1
   address-family ipv6 uni
    next-hop-self
 !
- neighbor 11.1.1.11
+ neighbor 11.1.1.20
  description eBGP to devbox
  remote-as 65000
  address-family ipv4 unicast
