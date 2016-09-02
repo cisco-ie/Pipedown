@@ -22,6 +22,9 @@ Vagrant.configure(2) do |config|
       # gig0/0/0/0 connected to link1, gig0/0/0/1 connected to link2, auto-config not supported
       node.vm.network :private_network, virtualbox__intnet: "link1", auto_config: false
       node.vm.network :private_network, virtualbox__intnet: "link2", auto_config: false
+      node.vm.provider "virtualbox" do |v|
+            v.customize ["modifyvm", :id, "--nic4", "natnetwork", "--nat-network4", "Internet"]
+      end
       node.vm.network "forwarded_port", guest: 58822, host: 58822
       node.vm.provision :shell, path: "scripts/iperf.sh"
       # Launch the container
