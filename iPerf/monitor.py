@@ -33,15 +33,15 @@ class Monitor(object):
         import pdb
         pdb.set_trace()
         cmd = "iperf -c %s -B %s -t %d -i %d -u -y C" % \
-        (self.server, self.interface, self.interval, self.interval) # Does this need to be UDP?
+        (self.server, self.interface, self.interval, self.interval)
         # Perform the network monitoring task
         process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        out, err = process.communicate()  # Don't worry about stderr.
-        if 'Connection refused' in err:
-            print err
+        out, err = process.communicate()
+        if err: # Will we need more information? This could be an iPerf server problem.
+            return True
         # Parse the output.
-        transferred_bytes = float(out.splitlines()[2].split(',')[7]) ## There is a bug here, the list index goes out of range
+        transferred_bytes = float(out.splitlines()[2].split(',')[7])
         bps = (transferred_bytes * 8) / float(self.interval)
         bandwidth = bps/1024.0
         jitter = out.splitlines()[2].split(',')[9]
