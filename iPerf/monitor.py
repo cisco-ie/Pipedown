@@ -1,6 +1,7 @@
 """This module contains the MonitoriPerf class"""
 
 import subprocess
+from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
 class Monitor(object):
     """A class for monitor interfaces with iPerf.
@@ -64,10 +65,14 @@ class Monitor(object):
         :param link_type: ISIS or BGP
         :type link_type: str
         """
-        path = '{"Cisco-IOS-XR-ip-rib-ipv4-oper:{link_type}": [null]}'
+        client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'vagrant', 'vagrant')
+        path = '{"Cisco-IOS-XR-ip-rib-ipv4-oper:{link_type}": [null]}' % \
+        (link_type)
+        output = client.getconfig(path)
+        print output
         #GRPC Stuff
         #parse output
-        if self.interface in output:
-            return True
-        else:
-            return False
+        # if self.interface in output:
+        #     return True
+        # else:
+        #     return False
