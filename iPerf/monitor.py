@@ -33,11 +33,13 @@ class Monitor(object):
         import pdb
         pdb.set_trace()
         cmd = "iperf -c %s -B %s -t %d -i %d -u -y C" % \
-        (self.server, self.interface, self.interval, self.interval)
+        (self.server, self.interface, self.interval, self.interval) # Does this need to be UDP?
         # Perform the network monitoring task
         process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        out, _ = process.communicate()  # Don't worry about stderr.
+        out, err = process.communicate()  # Don't worry about stderr.
+        if 'Connection refused' in err:
+            print err
         # Parse the output.
         transferred_bytes = float(out.splitlines()[2].split(',')[7]) ## There is a bug here, the list index goes out of range
         bps = (transferred_bytes * 8) / float(self.interval)
@@ -51,6 +53,8 @@ class Monitor(object):
                 float(pkt_loss) > float(self.pkt_loss)
             ]
         )
+        # False is good! iPerf link sees no problems.
+        # True is bad, there are problems on the link.
         return verdict
 
     def check_routing(self, link_type):
