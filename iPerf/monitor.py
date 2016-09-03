@@ -31,8 +31,6 @@ class Monitor(object):
 
     def run_iperf(self):
         """Run iPerf to check the health of the link"""
-        import pdb
-        pdb.set_trace()
         cmd = "iperf -c %s -B %s -t %d -i %d -u -y C" % \
         (self.server, self.interface, self.interval, self.interval)
         # Perform the network monitoring task
@@ -58,21 +56,20 @@ class Monitor(object):
         # True is bad, there are problems on the link.
         return verdict
 
-    def check_routing(self, link_type):
+    def check_routing(self, link, protocol):
         """Check if there is a route to the neighbor based on the link_type.
         Uses gRPC to read the routing table, checking specifically that the interface
         has a route (and of the type specified).
-        :param link_type: ISIS or BGP
-        :type link_type: str
+        :param protocol: ISIS or BGP
+	:param link: IP address of the link
+        :type protocol: str
+	:type link: str
         """
         client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'vagrant', 'vagrant')
-        path = '{"Cisco-IOS-XR-ip-rib-ipv4-oper:{link_type}": [null]}' % \
-        (link_type)
-        output = client.getconfig(path)
-        print output
-        #GRPC Stuff
-        #parse output
-        # if self.interface in output:
-        #     return True
-        # else:
-        #     return False
+	path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+	path = path.format(link=link)
+        output = client.getoper(path)
+        if protocol in output: # Could there be multiple instances of the link?
+	    return True
+	else:
+            return False
