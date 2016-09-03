@@ -69,7 +69,7 @@ class Monitor(object):
 	path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
 	path = path.format(link=link)
         output = client.getoper(path)
-        if protocol in output: # Could there be multiple instances of the link?
+        if protocol in output and '"active": true' in output: # Could there be multiple instances of the link?
 	    return True
 	else:
             return False
