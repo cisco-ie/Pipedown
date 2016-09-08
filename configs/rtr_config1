@@ -1,3 +1,5 @@
+hostname rtr1
+!
 interface Loopback0
  ipv4 address 10.1.1.2 255.255.255.255
  ipv6 address 10:1:1::2/128
