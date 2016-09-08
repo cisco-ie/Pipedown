@@ -1,10 +1,10 @@
-"""This module contains the MonitoriPerf class"""
+"""This module contains the Link class"""
 
 import subprocess
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
-class Monitor(object):
-    """A class for monitor interfaces with iPerf.
+class Link(object):
+    """A class for monitoring interfaces with iPerf.
     :param server: The iPerf server ip address.
     :param: interface: The outgoing interface.
     :param: bw_thres: The bandwidth threshold. Default to 400 KBits.
@@ -56,17 +56,31 @@ class Monitor(object):
         # True is bad, there are problems on the link.
         return verdict
 
-    def check_routing(self, link, protocol):
+    def check_routing(self, protocol):
         """Check if there is a route to the neighbor based on the link_type.
-        Uses gRPC to read the routing table, checking specifically that the interface
-        has a route (and of the type specified).
+        Uses gRPC to read the routing table, checking specifically that the 
+        interface has a route (and of the type specified).
         :param protocol: ISIS or BGP
-	:param link: IP address of the link
+        :param link: IP address of the link
         :type protocol: str
-	:type link: str
+        :type link: str
         """
         client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'vagrant', 'vagrant')
-	path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
-	path = path.format(link=link)
+        path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+        path = path.format(link=self.interface)
         output = client.getoper(path)
-        return(protocol in output and '"active": true' in output) # Could there be multiple instances of the link?
+        # Could there be multiple instances of the link?
+        return protocol in output and '"active": true' in output
+
+    def health(self, protocol):
+        """Check the health of the link. 
+        Runs both check_routing and run_iperf.
+
+        :param protocol: ISIS or BGP
+        :type protocol: str
+        """
+        routing = self.check_routing(protocol)
+        iperf = self.run_iperf()
+        return routing and iperf
+
+
