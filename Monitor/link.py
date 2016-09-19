@@ -2,7 +2,6 @@
 
 import subprocess
 from grpc.framework.interfaces.face.face import AbortionError
-from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
 class Link(object):
     """A class for monitoring interfaces with iPerf.
@@ -34,18 +33,54 @@ class Link(object):
         self.grpc_client = grpc_client
 
     def __repr__(self):
-        return '{}(Server={}, Interface={}, gRPC Client={} Bandwidth Threshold={}, ' \
-                  'Jitter Threshold={}, Packet Loss={}, Interval={}' \
-                  ')'.format(
-                      self.__class__.__name__,
-                      self.server,
-                      self.interface,
-                      self.grpc_client,
-                      self.bw_thres,
-                      self.jitter_thres,
-                      self.pkt_loss,
-                      self.interval
-                      )
+        return '{}(Server = {}, Interface = {}, gRPC_Client = {}, ' \
+                'Bandwidth_Threshold = {}, Jitter_Threshold = {}, ' \
+                'Packet_Loss = {}, Interval = {}' \
+                ')'.format(
+                    self.__class__.__name__,
+                    self.server,
+                    self.interface,
+                    self.grpc_client,
+                    self.bw_thres,
+                    self.jitter_thres,
+                    self.pkt_loss,
+                    self.interval
+                    )
+
+    @staticmethod
+    def _check_protocol(protocol):
+        """Ensure the protocol entered is valid, return True if valid and
+        False if invalid.
+
+        :param protocol: The given protocol.
+        :type protocol: str
+        """
+        protocols = [
+            'ISIS',
+            'IS-IS',
+            'IS-IS LEVEL-1',
+            'IS-IS LEVEL-2',
+            'IS-IS INTER AREA',
+            'IS-IS SUMMARY NULL',
+            'BGP',
+            'RIP',
+            'OSPF',
+            'OSPF INTER AREA',
+            'OSPF NSSA EXTERNAL TYPE 1',
+            'OSPF EXTERNAL TYPE 2',
+            'EGP',
+            'LOCAL',
+            'ODR',
+            'PER-USER STATIC ROUTE',
+            'DAGR',
+            'FRR BACKUP PATH',
+            'ACCESS/SUBSCRIBER'
+            'STATIC',
+            'CONNECTED',
+            'EIGRP',
+            'EIGRP EXTERNAL',
+        ]
+        return protocol.upper() in protocols
 
     def run_iperf(self):
         """Run iPerf to check the health of the link.
@@ -77,7 +112,7 @@ class Link(object):
         # True is bad, there are problems on the link.
         return verdict
 
-    def check_routing(self, protocol, client):
+    def check_routing(self, protocol):
         """Returns False (no error) if there is a route in the RIB, True if not.
 
         Checks if there is a route to the neighbor from the link.interface
@@ -93,31 +128,33 @@ class Link(object):
         :type link: str
         :type client: gRPC Client object
         """
-        path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
-        path = path.format(link=self.interface)
-        try:
-            output = client.getoper(path)
-            # Could there be multiple instances of the link?
-            return protocol not in output and '"active": true' not in output
-        except AbortionError:
-            print 'Unable to connect to box, check your gRPC server.'
+        if self._check_protocol(protocol):
+            path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+            path = path.format(link=self.interface)
+            try:
+                output = self.grpc_client.getoper(path)
+                # Could there be multiple instances of the link?
+                return protocol not in output and '"active": true' not in output
+            except AbortionError:
+                print 'Unable to connect to box, check your gRPC server.'
+        else:
+            print "Invalid protocol type '{}'.".format(protocol)
 
-    def health(self, protocol, client):
-        """Check the health of the link, returns True if there is an error, 
+    def health(self, protocol):
+        """Check the health of the link, returns True if there is an error,
         False if no error.
         Runs both check_routing and run_iperf.
 
-        :param protocol: ISIS or BGP
+        :param protocol: Routing protocol (ex. IS-IS or BGP)
         :param client: gRPC Client object
 
         :type protocol: str
         :type client: gRPC Client object
         """
-        routing = self.check_routing(protocol, client)
+        routing = self.check_routing(protocol)
         if routing:
             iperf = self.run_iperf()
             return iperf
         else:
             return routing
-
 
