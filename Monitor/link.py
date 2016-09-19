@@ -74,7 +74,7 @@ class Link(object):
 
     def check_routing(self, protocol):
         """
-        Returns True if there is a route in the RIB, False if not.
+        Returns False (no error) if there is a route in the RIB, True if not.
 
         Checks if there is a route to the neighbor from the link.interface
         of the protocol given (typically ISIS or BGP).
@@ -92,11 +92,12 @@ class Link(object):
         path = path.format(link=self.interface)
         output = client.getoper(path)
         # Could there be multiple instances of the link?
-        return protocol in output and '"active": true' in output
+        return protocol not in output and '"active": true' not in output
 
     def health(self, protocol):
         """Check the health of the link.
         Runs both check_routing and run_iperf.
+        Returns True if there is an error, False if no error.
 
         :param protocol: ISIS or BGP
         :type protocol: str
