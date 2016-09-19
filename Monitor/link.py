@@ -29,8 +29,24 @@ class Link(object):
         self.interface = interface
         self.server = server
 
+    def __repr__(self):
+        return '{}(Server={}, Interface={}, Bandwidth Threshold={}, ' \
+                  'Jitter Threshold={}, Packet Loss={}, Interval={}' \
+                  ')'.format(
+                      self.__class__.__name__,
+                      self.server,
+                      self.interface,
+                      self.bw_thres,
+                      self.jitter_thres,
+                      self.pkt_loss,
+                      self.interval
+                      )
+
     def run_iperf(self):
-        """Run iPerf to check the health of the link"""
+        """Run iPerf to check the health of the link.
+        Returns False if no problems are detected, returns True if there
+        are issues on the link.
+        """
         cmd = "iperf -c %s -B %s -t %d -i %d -u -y C" % \
         (self.server, self.interface, self.interval, self.interval)
         # Perform the network monitoring task
@@ -57,9 +73,15 @@ class Link(object):
         return verdict
 
     def check_routing(self, protocol):
-        """Check if there is a route to the neighbor based on the link_type.
-        Uses gRPC to read the routing table, checking specifically that the 
+        """
+        Returns True if there is a route in the RIB, False if not.
+
+        Checks if there is a route to the neighbor from the link.interface
+        of the protocol given (typically ISIS or BGP).
+
+        Uses gRPC to read the routing table, checking specifically that the
         interface has a route (and of the type specified).
+
         :param protocol: ISIS or BGP
         :param link: IP address of the link
         :type protocol: str
@@ -73,14 +95,17 @@ class Link(object):
         return protocol in output and '"active": true' in output
 
     def health(self, protocol):
-        """Check the health of the link. 
+        """Check the health of the link.
         Runs both check_routing and run_iperf.
 
         :param protocol: ISIS or BGP
         :type protocol: str
         """
         routing = self.check_routing(protocol)
-        iperf = self.run_iperf()
-        return routing and iperf
+        if routing:
+            iperf = self.run_iperf()
+            return iperf
+        else:
+            return routing
 
 
