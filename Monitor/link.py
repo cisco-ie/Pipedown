@@ -7,8 +7,9 @@ from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 class Link(object):
     """A class for monitoring interfaces with iPerf.
     :param server: The iPerf server ip address.
-    :param: interface: The outgoing interface.
-    :param: bw_thres: The bandwidth threshold. Default to 400 KBits.
+    :param interface: The outgoing interface.
+    :param grpc_client: gRPC Client object.
+    :param bw_thres: The bandwidth threshold. Default to 400 KBits.
     :param jitter_thres: Jitter threshold. Default 10ms.
     :param pkt_loss: Number of acceptable lost packets.
     :param interval: The interval time in seconds between periodic bandwidth,
@@ -16,6 +17,7 @@ class Link(object):
 
     :type server: str
     :type interface: sr
+    :type grpc_client: gRPC Client object
     :type bw_thres: int
     :type jitter_thres: int
     :type pkt_loss: int
@@ -75,9 +77,8 @@ class Link(object):
         # True is bad, there are problems on the link.
         return verdict
 
-    def check_routing(self, protocol):
-        """
-        Returns False (no error) if there is a route in the RIB, True if not.
+    def check_routing(self, protocol, client):
+        """Returns False (no error) if there is a route in the RIB, True if not.
 
         Checks if there is a route to the neighbor from the link.interface
         of the protocol given (typically ISIS or BGP).
@@ -87,10 +88,11 @@ class Link(object):
 
         :param protocol: ISIS or BGP
         :param link: IP address of the link
+        :param client: gRPC Client object
         :type protocol: str
         :type link: str
+        :type client: gRPC Client object
         """
-        client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'vagrant', 'vagrant')
         path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
         path = path.format(link=self.interface)
         try:
@@ -100,15 +102,18 @@ class Link(object):
         except AbortionError:
             print 'Unable to connect to box, check your gRPC server.'
 
-    def health(self, protocol):
-        """Check the health of the link.
+    def health(self, protocol, client):
+        """Check the health of the link, returns True if there is an error, 
+        False if no error.
         Runs both check_routing and run_iperf.
-        Returns True if there is an error, False if no error.
 
         :param protocol: ISIS or BGP
+        :param client: gRPC Client object
+
         :type protocol: str
+        :type client: gRPC Client object
         """
-        routing = self.check_routing(protocol)
+        routing = self.check_routing(protocol, client)
         if routing:
             iperf = self.run_iperf()
             return iperf
