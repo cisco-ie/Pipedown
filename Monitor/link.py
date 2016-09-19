@@ -1,6 +1,7 @@
 """This module contains the Link class"""
 
 import subprocess
+from grpc.framework.interfaces.face.face import AbortionError
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
 class Link(object):
@@ -20,7 +21,7 @@ class Link(object):
     :type pkt_loss: int
     :type interval: int
     """
-    def __init__(self, server, interface, bw_thres=400, jitter_thres=10,
+    def __init__(self, server, interface, grpc_client, bw_thres=400, jitter_thres=10,
                  pkt_loss=2, interval=10):
         self.bw_thres = bw_thres
         self.jitter_thres = jitter_thres
@@ -28,14 +29,16 @@ class Link(object):
         self.interval = interval
         self.interface = interface
         self.server = server
+        self.grpc_client = grpc_client
 
     def __repr__(self):
-        return '{}(Server={}, Interface={}, Bandwidth Threshold={}, ' \
+        return '{}(Server={}, Interface={}, gRPC Client={} Bandwidth Threshold={}, ' \
                   'Jitter Threshold={}, Packet Loss={}, Interval={}' \
                   ')'.format(
                       self.__class__.__name__,
                       self.server,
                       self.interface,
+                      self.grpc_client,
                       self.bw_thres,
                       self.jitter_thres,
                       self.pkt_loss,
@@ -90,9 +93,12 @@ class Link(object):
         client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'vagrant', 'vagrant')
         path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
         path = path.format(link=self.interface)
-        output = client.getoper(path)
-        # Could there be multiple instances of the link?
-        return protocol not in output and '"active": true' not in output
+        try:
+            output = client.getoper(path)
+            # Could there be multiple instances of the link?
+            return protocol not in output and '"active": true' not in output
+        except AbortionError:
+            print 'Unable to connect to box, check your gRPC server.'
 
     def health(self, protocol):
         """Check the health of the link.
