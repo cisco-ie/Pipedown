@@ -55,6 +55,7 @@ class Link(object):
         :param protocol: The given protocol.
         :type protocol: str
         """
+        #Check with Bruce about these protocols
         protocols = [
             'ISIS',
             'IS-IS',
@@ -62,24 +63,33 @@ class Link(object):
             'IS-IS LEVEL-2',
             'IS-IS INTER AREA',
             'IS-IS SUMMARY NULL',
-            'BGP',
-            'RIP',
-            'OSPF',
-            'OSPF INTER AREA',
-            'OSPF NSSA EXTERNAL TYPE 1',
-            'OSPF EXTERNAL TYPE 2',
-            'EGP',
-            'LOCAL',
-            'ODR',
-            'PER-USER STATIC ROUTE',
-            'DAGR',
-            'FRR BACKUP PATH',
-            'ACCESS/SUBSCRIBER'
-            'STATIC',
-            'CONNECTED',
-            'EIGRP',
-            'EIGRP EXTERNAL',
+            'BGP'
         ]
+        # protocols = [
+        #     'ISIS',
+        #     'IS-IS',
+        #     'IS-IS LEVEL-1',
+        #     'IS-IS LEVEL-2',
+        #     'IS-IS INTER AREA',
+        #     'IS-IS SUMMARY NULL',
+        #     'BGP',
+        #     'RIP',
+        #     'OSPF',
+        #     'OSPF INTER AREA',
+        #     'OSPF NSSA EXTERNAL TYPE 1',
+        #     'OSPF EXTERNAL TYPE 2',
+        #     'EGP',
+        #     'LOCAL',
+        #     'ODR',
+        #     'PER-USER STATIC ROUTE',
+        #     'DAGR',
+        #     'FRR BACKUP PATH',
+        #     'ACCESS/SUBSCRIBER'
+        #     'STATIC',
+        #     'CONNECTED',
+        #     'EIGRP',
+        #     'EIGRP EXTERNAL',
+        # ]
         return protocol.upper() in protocols
 
     def run_iperf(self):
@@ -134,7 +144,7 @@ class Link(object):
             try:
                 output = self.grpc_client.getoper(path)
                 # Could there be multiple instances of the link?
-                return protocol not in output and '"active": true' not in output
+                return protocol not in output or '"active": true' not in output
             except AbortionError:
                 print 'Unable to connect to box, check your gRPC server.'
         else:
