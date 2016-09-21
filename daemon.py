@@ -28,11 +28,11 @@ def monitor(section):
         sys.exit(1)
 
     #Set up gRPC client
-    client = CiscoGRPCClient(grpc_server, grpc_port, 10, grpc_user, grpc_pass)
+    client = CiscoGRPCClient(grpc_server, int(grpc_port), 10, grpc_user, grpc_pass)
 
     #Run Link Tool
     while True:
-        result = linkstate(destination, source, protocol)
+        result = linkstate(destination, source, client, protocol)
         print result
         if result == True:
             time.sleep(1)
@@ -40,7 +40,7 @@ def monitor(section):
 
 def linkstate(destination, source, client, protocol):
     logging.basicConfig(filename='example.log',level=logging.DEBUG)
-    link = Link(destination, source)
+    link = Link(destination, source, client)
     result = link.health(protocol)
     logging.info(result)
     return result
