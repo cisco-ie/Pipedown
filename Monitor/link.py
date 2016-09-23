@@ -63,6 +63,10 @@ class Link(object):
             'IS-IS LEVEL-2',
             'IS-IS INTER AREA',
             'IS-IS SUMMARY NULL',
+            'ISIS LEVEL-1',
+            'ISIS LEVEL-2',
+            'ISIS INTER AREA',
+            'ISIS SUMMARY NULL',
             'BGP'
         ]
         # protocols = [
@@ -99,11 +103,13 @@ class Link(object):
         """
         cmd = "iperf -c %s -B %s -t %d -i %d -u -y C" % \
         (self.server, self.interface, self.interval, self.interval)
-        # Perform the network monitoring task
+        # Perform the network monitoring task.
         process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         out, err = process.communicate()
-        if err: # Will we need more information? This could be an iPerf server problem.
+        if err:
+            if 'Connection refused' in err:
+                print 'Connection refused. Check the connection to the server.'
             return True
         # Parse the output.
         transferred_bytes = float(out.splitlines()[2].split(',')[7])
@@ -161,10 +167,13 @@ class Link(object):
         :type protocol: str
         :type client: gRPC Client object
         """
-        routing = self.check_routing(protocol)
-        if routing:
-            iperf = self.run_iperf()
-            return iperf
+        if isinstance(protocol, str):
+            routing = self.check_routing(protocol)
+            if routing:
+                iperf = self.run_iperf()
+                return iperf
+            else:
+                return routing
         else:
-            return routing
+            print "Expecting type string as the argument."
 
