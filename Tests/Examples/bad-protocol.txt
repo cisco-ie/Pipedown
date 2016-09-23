@@ -1,0 +1,130 @@
+{
+ "Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {
+  "vrfs": {
+   "vrf": [
+    {
+     "vrf-name": "default",
+     "afs": {
+      "af": [
+       {
+        "af-name": "IPv4",
+        "safs": {
+         "saf": [
+          {
+           "saf-name": "Unicast",
+           "ip-rib-route-table-names": {
+            "ip-rib-route-table-name": [
+             {
+              "route-table-name": "default",
+              "routes": {
+               "route": [
+                {
+                 "address": "10.1.1.2",
+                 "prefix-length": 32,
+                 "prefix": "10.1.1.2",
+                 "prefix-length-xr": 32,
+                 "route-version": 27,
+                 "protocol-id": 6,
+                 "protocol-name": "ospf",
+                 "instance": 1,
+                 "client-id": 16,
+                 "route-type": 128,
+                 "priority": 7,
+                 "svd-type": 1,
+                 "flags": 142606336,
+                 "extended-flags": 0,
+                 "tag": 0,
+                 "distance": 115,
+                 "diversion-distance": 0,
+                 "metric": 10,
+                 "paths-count": 1,
+                 "attribute-identity": 0,
+                 "traffic-index": 0,
+                 "route-precedence": 255,
+                 "qos-group": 255,
+                 "flow-tag": 0,
+                 "fwd-class": 0,
+                 "pic-count": 0,
+                 "active": true,
+                 "diversion": false,
+                 "diversion-proto-name": [
+                  null
+                 ],
+                 "route-age": 2252,
+                 "route-label": 100002,
+                 "version": 27,
+                 "tbl-version": 110,
+                 "route-modify-time": 1472930781897781036,
+                 "route-path": {
+                  "ipv4-rib-edm-path": [
+                   {
+                    "address": "12.1.1.20",
+                    "information-source": "10.1.1.2",
+                    "v6-nexthop": "::",
+                    "interface-name": "GigabitEthernet0/0/0/0",
+                    "metric": 10,
+                    "load-metric": 0,
+                    "flags64": 0,
+                    "flags": 0,
+                    "private-flags": 66,
+                    "looped": false,
+                    "next-hop-table-id": 0,
+                    "next-hop-vrf-name": [
+                     null
+                    ],
+                    "next-hop-table-name": [
+                     null
+                    ],
+                    "next-hop-afi": 0,
+                    "next-hop-safi": 0,
+                    "route-label": 1048580,
+                    "tunnel-id": 0,
+                    "pathid": 1,
+                    "backup-pathid": 0,
+                    "ref-cnt-of-backup": 0,
+                    "number-of-extended-communities": 0,
+                    "mvpn-present": false,
+                    "path-rt-present": false,
+                    "vrf-import-rt-present": false,
+                    "source-asrt-present": false,
+                    "source-rd-present": false,
+                    "segmented-nexthop-present": false,
+                    "next-hop-id": 6,
+                    "next-hop-id-refcount": 2,
+                    "ospf-area-id": [
+                     null
+                    ],
+                    "remote-backup-addr": [
+                     "0.0.0.0",
+                     "0.0.0.0"
+                    ],
+                    "has-labelstk": false,
+                    "num-labels": 0,
+                    "labelstk": [
+                     0,
+                     0,
+                     0
+                    ],
+                    "binding-label": 1048577,
+                    "nhid-feid": 18446744073709551614,
+                    "mpls-feid": 18446744073709551614
+                   }
+                  ]
+                 }
+                }
+                 ]
+              }
+             }
+            ]
+           }
+          }
+         ]
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}
