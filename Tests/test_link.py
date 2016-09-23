@@ -1,21 +1,15 @@
 import unittest
 import os
-from mock import MagicMock, patch
+from mock import patch
 from Monitor.link import Link
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
-def add_location(filepath):
-    location = os.path.dirname(os.path.realpath(__file__))
-    new_filepath = os.path.join(location, filepath)
-    return new_filepath
 
 def read_file(filepath):
-    with open(add_location(filepath)) as f:
+    location = os.path.dirname(os.path.realpath(__file__))
+    new_filepath = os.path.join(location, filepath)
+    with open(new_filepath) as f:
         return f.read()
-
-def read_lines(filepath):
-    with open(add_location(filepath)) as f:
-        return f.readlines()
 
 class LinkTestCase(unittest.TestCase, object):
 
