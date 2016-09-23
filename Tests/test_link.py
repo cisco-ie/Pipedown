@@ -4,14 +4,13 @@ from mock import patch
 from Monitor.link import Link
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
-
-def read_file(filepath):
-    location = os.path.dirname(os.path.realpath(__file__))
-    new_filepath = os.path.join(location, filepath)
-    with open(new_filepath) as f:
-        return f.read()
-
 class LinkTestCase(unittest.TestCase, object):
+    @staticmethod
+    def read_file(filepath):
+        location = os.path.dirname(os.path.realpath(__file__))
+        new_filepath = os.path.join(location, filepath)
+        with open(new_filepath) as f:
+            return f.read()
 
     @classmethod
     def setUpClass(cls):
@@ -28,17 +27,18 @@ class LinkTestCase(unittest.TestCase, object):
 
     @patch('Monitor.link.subprocess.Popen.communicate')
     def test_iperf(self, mock_communicate):
-        out = read_file('Examples/iPerf/good.txt')
+        err = 'read failed: Connection refused\n'
+        mock_communicate.return_value = ['', err]
+        response = self.link.run_iperf()
+        self.assertTrue(response)
+
+        out = self.read_file('Examples/iPerf/good.txt')
         mock_communicate.return_value = [out, '']
         self.assertFalse(self.link.run_iperf())
 
-        out = read_file('Examples/iPerf/high-bandwidth.txt')
+        out = self.read_file('Examples/iPerf/high-bandwidth.txt')
         mock_communicate.return_value = [out, '']
         self.assertTrue(self.link.run_iperf())
-
-        err = 'read failed: Connection refused\n'
-        mock_communicate.return_value = ['', err]
-        self.assertTrue(self.link.run_iperf)
 
     @patch('Monitor.link.Link.check_routing')
     @patch('Monitor.link.Link.run_iperf')
@@ -69,16 +69,16 @@ class LinkTestCase(unittest.TestCase, object):
         self.link.check_routing('bad')
         mock_get.assert_not_called()
 
-        output_good = read_file('Examples/protocol-active.txt')
+        output_good = self.read_file('Examples/protocol-active.txt')
         mock_get.return_value = output_good
         self.assertFalse(self.link.check_routing('isis'))
         self.assertTrue(self.link.check_routing('bgp'))
 
-        output_bad = read_file('Examples/non-active.txt')
+        output_bad = self.read_file('Examples/non-active.txt')
         mock_get.return_value = output_bad
         self.assertTrue(self.link.check_routing('isis'))
 
-        output_bad = read_file('Examples/bad-protocol.txt')
+        output_bad = self.read_file('Examples/bad-protocol.txt')
         mock_get.return_value = output_bad
         self.assertTrue(self.link.check_routing('isis'))
 
