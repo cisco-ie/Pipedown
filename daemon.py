@@ -37,7 +37,8 @@ def monitor(section):
         print result
         if result == True:
             time.sleep(1)
-            flush(client, flush_as, drop_policy_name, 'get-neighborsq.json')
+            flush(client, flush_as, 'drop', 'flush/get-neighborsq.json')
+            sys.exit(1)
 
 def linkstate(destination, source, client, protocol):
     logging.basicConfig(filename='example.log',level=logging.DEBUG)
@@ -49,9 +50,10 @@ def linkstate(destination, source, client, protocol):
 def flush(client, ext_as, drop_policy_name, bgp_config_fn):
     #calling Quan script
     print "Triggering flush"
-    flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn)
+    flush_bgp = Flush_BGP(client, [ext_as], drop_policy_name, bgp_config_fn)
     rm_neighbors = flush_bgp.get_bgp_neighbors()
-    print "Removed Neighbors: " + rm_neighbors
+    print "Flush triggered"
+    for p in rm_neighbors: print p
     return
 
 if __name__ == '__main__':
