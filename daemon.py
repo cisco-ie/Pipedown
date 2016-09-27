@@ -4,11 +4,13 @@ import sys
 import logging
 import os
 import ConfigParser
+from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
 def monitor(section):
     '''
     add a confiuration file details here
     '''
+    #Read in Configuration for Daemon
     location = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser.ConfigParser()
     try:
@@ -24,6 +26,11 @@ def monitor(section):
     except (ConfigParser.Error, ValueError), e:
 	print e
         sys.exit(1)
+
+    #Set up gRPC client
+    client = CiscoGRPCClient(grpc_server, grpc_port, 10, grpc_user, grpc_pass)
+
+    #Run Link Tool
     while True:
         result = linkstate(destination, source, protocol)
         print result
@@ -31,7 +38,7 @@ def monitor(section):
             time.sleep(1)
             flush(grpc_server, grpc_port, grpc_user, grpc_pass, flush_as)
 
-def linkstate(destination, source, protocol):
+def linkstate(destination, source, client, protocol):
     logging.basicConfig(filename='example.log',level=logging.DEBUG)
     link = Link(destination, source)
     result = link.health(protocol)
