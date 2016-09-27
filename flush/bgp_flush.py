@@ -1,45 +1,39 @@
 import sys
-#sys.path.insert(0, '../')
+import logging
+sys.path.insert(1, '../Tools/grpc_cisco_python/client')
 
 import copy
 import json 
-import logging 
 from pprint import pprint
 from cisco_grpc_client import CiscoGRPCClient
 
-""" Removes all BGP neighbors of a given external AS using GRPC to send and commit configurations in IOS-XR."""
+""" Removes all BGP neighbors of a given external AS using GRPC to send and commit configurations in IOS-XR.
+    Must include the neighborsq.json path. This is the standard BGP configuration template that is used for flushing.
+"""
 
+
+logging.basicConfig(level=logging.INFO)
 
 class Flush_BGP(object):
     """Flush_BGP object that will initiate the GRPC client to perform the neighbor removal and commits. 
 
     Attributes:
+        grpc_client: the intiaited GRPC client 
         ext_as: the list of external AS
         drop_policy_name = name of the policy file to be used when dropping a neighbor
-        bgp_config_fn = name and location of the BGP configuration template
-        router_ip = address of the router where this code is to be run
-        un = username
-        pw = password
-        grpc_port = the port number enabled on the router for GRPC
-        
+        bgp_config_fn = name and location of the BGP configuration template        
     """
-    def __init__(self, ext_as, drop_policy_name, bgp_config_fn, 
-                 router_ip, un, pw, grpc_port=57400):
+    def __init__(self, grpc_client, ext_as, drop_policy_name, bgp_config_fn):
         
         self.neighbor_as = ext_as
         self.drop_policy_name = drop_policy_name
         self.bgp_config_fn = bgp_config_fn
-        self.router_ip = router_ip
-        self.un = un
-        self.pw = pw
-        self.grpc_port = grpc_port
+        self.client = grpc_client
         
         # load the BGP config file
         bgp_config = self.__load_bgp_template__(self.bgp_config_fn)
         
-        # start the GRPC client
-        logging.info("Staring the GRPC client....")
-        self.client = CiscoGRPCClient(self.router_ip, self.grpc_port, 10, self.un, self.pw)
+        # get the BGP config
         res = self.client.getconfig(bgp_config)
         
         # decodes the current BGP config into JSON
@@ -59,7 +53,7 @@ class Flush_BGP(object):
             if as_val in self.neighbor_as:
                 # change the policy to drop 
                 curr_policy = neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out']
-                neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = self.drop_policy_name  # set the new policy name
+                neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = self.drop_policy_name
                 removed_neighbors.append((neighbor['neighbor-address'], curr_policy))
         
         c = json.dumps(c)
@@ -74,7 +68,7 @@ class Flush_BGP(object):
             params:
             rm_neighbors: list of removed BGP neighbors
         """
-        logging.info("Checking if neighbors were flushed...")
+        logging.info('Checking if neighbors were flushed....')
 
         # create the template for BGP neigbors
         template = {}
@@ -95,11 +89,10 @@ class Flush_BGP(object):
             dup['neighbor-address'] = ip
             k.append(dup)
 
-        #pprint(bgp_json) 
-        #print '------------------------------'
+        # get the BGP config
         resp = self.client.getconfig(json.dumps(bgp_json))
         resp = json.loads(resp)
-        #pprint(resp) 
+
         k2 = resp["Cisco-IOS-XR-ipv4-bgp-cfg:bgp"]["instance"][0]["instance-as"][0]["four-byte-as"][0]        
         k2 = k2["default-vrf"]["bgp-entity"]["neighbors"]["neighbor"]
          
@@ -110,15 +103,12 @@ class Flush_BGP(object):
             if curr_policy_name != self.drop_policy_name:
                 s = "Failed policy for " + ip 
                 sys.exit(s)
-        logging.info("Successfuly flushed all BGP neighbors.")
+        logging.info("Sucessfully flushed all BGP neighbors.")
             
 
     def __flush_bgp_neighbors__(self, flush_bgp_config):
-        """ Remove the neighbor from the router configuration with GRPC call. 
-            
-            flush_bgp_config: the JSON file that contains the new flushed configuration
-        """
-        logging.info('Flushing the bgp neighbors...')
+        """ Remove the neighbor from the router configuration with GRPC call. """
+        logging.info('flushing the bgp neighbors...')
         resp = self.client.mergeconfig(flush_bgp_config)
         
         if resp == None:
@@ -127,36 +117,39 @@ class Flush_BGP(object):
             return resp
    
     def __load_bgp_template__(self, fn):
-        """ Internal function to load a BGP YANG model template 
-
-            fn: path and file name
-        """
+        """ Function to read in a template. """
         with open(fn, 'r') as f:
             config = f.read()
         return config 
   
 
 def main():
+    """
+        Main function that tests the functionality. Initiate the GRPC client and provide sample config 
+        and drop policy file names. 
+    """
     router_ip = '10.85.138.39'
     ext_as = [2235, 44444]
-    un = 'cisco'
-    pw = 'cisco'
-    grpc_port = 57400
     config_fn = "get-neighborsq.json"
     drop_policy_name = 'drop'
 
     # start the GRPC client
-    bgp_client = Flush_BGP(ext_as, drop_policy_name, config_fn, \
-                                router_ip, un, pw, grpc_port)
+    logging.info('starting the GRPC client......')
+    client = CiscoGRPCClient(router_ip, 57400, 10, 'cisco', 'cisco')
+
+    # start the GRPC client
+    #bgp_flush = Flush_BGP(client, ext_as, drop_policy_name, config_fn)
     
     # flush the neighbors matching the AS
-    bgp_neighbors = bgp_client.get_bgp_neighbors()
-    print 'removed external BGP neighbors and previous policy:', bgp_neighbors
+    # bgp_neighbors = bgp_flush.get_bgp_neighbors()
+    # print 'removed external BGP neighbors and previous policy:', bgp_neighbors
 
     # check if properly flushed
-    rm_neighbors = list(zip(*bgp_neighbors)[0])
-    #rm_neighbors = ["2.2.3.7"]
-    bgp_client.check_flush_neighbors(rm_neighbors)
+    # rm_neighbors = list(zip(*bgp_neighbors)[0])
+    # #rm_neighbors = ["2.2.3.7"]
+    # bgp_flush.check_flush_neighbors(rm_neighbors)
+
+
 
 if __name__ == '__main__':
     main()
