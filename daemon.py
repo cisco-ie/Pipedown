@@ -49,7 +49,8 @@ def flush(client, ext_as, drop_policy_name, bgp_config_fn):
     print "Triggering flush"
     flush_bgp = Flush_BGP(client, [int(ext_as)], drop_policy_name, bgp_config_fn)
     rm_neighbors = flush_bgp.get_bgp_neighbors()
-    print "Flush triggered"
+#    rm_neighbors_string = ''.join(e.encode('ascii','ignore') for e,y in rm_neighbors)
+#    rm_neighbors_string = str(rm_neighbors).strip('[]')
     logging.info(rm_neighbors)
     return
 
