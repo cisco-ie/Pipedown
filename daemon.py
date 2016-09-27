@@ -50,7 +50,7 @@ def linkstate(destination, source, client, protocol):
 def flush(client, ext_as, drop_policy_name, bgp_config_fn):
     #calling Quan script
     print "Triggering flush"
-    flush_bgp = Flush_BGP(client, [ext_as], drop_policy_name, bgp_config_fn)
+    flush_bgp = Flush_BGP(client, [int(ext_as)], drop_policy_name, bgp_config_fn)
     rm_neighbors = flush_bgp.get_bgp_neighbors()
     print "Flush triggered"
     for p in rm_neighbors: print p
