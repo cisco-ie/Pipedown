@@ -11,7 +11,7 @@ from pprint import pprint
 """
 
 
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
 
 class Flush_BGP(object):
     """Flush_BGP object that will initiate the GRPC client to perform the neighbor removal and commits.
@@ -22,12 +22,13 @@ class Flush_BGP(object):
         drop_policy_name = name of the policy file to be used when dropping a neighbor
         bgp_config_fn = name and location of the BGP configuration template
     """
-    def __init__(self, grpc_client, ext_as, drop_policy_name, bgp_config_fn):
+    def __init__(self, grpc_client, ext_as, drop_policy_name, bgp_config_fn, logger):
 
         self.neighbor_as = ext_as
         self.drop_policy_name = drop_policy_name
         self.bgp_config_fn = bgp_config_fn
         self.client = grpc_client
+	self.logger = logger
 
         # load the BGP config file
         bgp_config = self.__load_bgp_template__(self.bgp_config_fn)
@@ -67,7 +68,7 @@ class Flush_BGP(object):
             params:
             rm_neighbors: list of removed BGP neighbors
         """
-        logging.info('Checking if neighbors were flushed....')
+        logger.info('Checking if neighbors were flushed....')
 
         # create the template for BGP neigbors
         template = {}
@@ -107,7 +108,7 @@ class Flush_BGP(object):
 
     def __flush_bgp_neighbors__(self, flush_bgp_config):
         """ Remove the neighbor from the router configuration with GRPC call. """
-        logging.info('flushing the bgp neighbors...')
+        self.logger.info('flushing the bgp neighbors...')
         resp = self.client.mergeconfig(flush_bgp_config)
 
         if resp == None:

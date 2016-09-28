@@ -1,6 +1,7 @@
 import multiprocessing
 import sys
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 import ConfigParser
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
@@ -34,14 +35,13 @@ def monitor(section):
     #Set up gRPC client
     client = CiscoGRPCClient(grpc_server, grpc_port, 10, grpc_user, grpc_pass)
     #Set up Logging
-#    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', filename='router_connected.log', level=logging.DEBUG)
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     console_handler.setFormatter(formatter)
-    file_handler = logging.handlers.RotatingFileHandler('router_connected.log' , mode='a', maxBytes=0, backupCount=0, encoding=None, delay=0)
+    file_handler = RotatingFileHandler('router_connected.log' , mode='a', maxBytes=10000, backupCount=1, encoding=None, delay=0)
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
@@ -55,14 +55,14 @@ def monitor(section):
             logger.info('Link is good')
         else:
             #Flushing connection to Internet due to Data center link being faulty.
-            logger.warning('Link is down, triggering Flush')
+            logger.critical('Link is down, triggering Flush')
             bgp_config_fn = 'Flush/get-neighborsq.json'
             try:
                 ext_as = flush_as.split()
                 ext_as = map(int, ext_as)
             except:
                 logger.error('Flush AS is in the wrong format')
-            flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn)
+            flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn, logger)
             rm_neighbors = flush_bgp.get_bgp_neighbors()
             #Currently rm_neighbors is a tuple in unicode, want to seperate the values into strings
             #rm_neighbors_string = ''.join(e.encode('ascii','ignore') for e,y in rm_neighbors)
