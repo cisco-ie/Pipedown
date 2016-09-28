@@ -1,5 +1,4 @@
 import multiprocessing
-import time
 import sys
 import logging
 import os
@@ -37,8 +36,7 @@ def monitor(section):
         result = linkstate(destination, source, client, protocol)
         logging.info(result)
         if result == True:
-            time.sleep(1)
-            flush(client, flush_as, drop_policy_name, 'flush/get-neighborsq.json')
+            flush(client, flush_as, drop_policy_name, 'Flush/get-neighborsq.json')
             sys.exit(1)
 
 def linkstate(destination, source, client, protocol):
