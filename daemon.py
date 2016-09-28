@@ -61,8 +61,9 @@ def monitor(section):
 
 
 if __name__ == '__main__':
-#    multiprocessing.log_to_stderr(logging.DEBUG)
-#    d = multiprocessing.Process(name='myApp', target=monitor, args=('router1',))
-#    d.daemon = True
-#    d.start()
-     monitor('router1')
+     multiprocessing.log_to_stderr(logging.DEBUG)
+     d = multiprocessing.Process(name='myApp', target=monitor, args=('router1',))
+     d.daemon = True
+     d.start()
+     d.join()
+#     monitor('router1')
