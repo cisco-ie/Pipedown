@@ -6,7 +6,7 @@ import os
 import ConfigParser
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
-from flush.bgp_flush import Flush_BGP
+from Flush.bgp_flush import Flush_BGP
 def monitor(section):
     '''
     add a confiuration file details here
@@ -24,36 +24,35 @@ def monitor(section):
         grpc_user = config.get(section, 'grpc_user')
         grpc_pass = config.get(section, 'grpc_pass')
         flush_as = config.get(section, 'flush_as')
+        drop_policy_name = config.get(section, 'drop_policy_name')
     except (ConfigParser.Error, ValueError), e:
 	print e
         sys.exit(1)
 
     #Set up gRPC client
     client = CiscoGRPCClient(grpc_server, int(grpc_port), 10, grpc_user, grpc_pass)
-
+    logging.basicConfig(filename='example.log',level=logging.DEBUG)
     #Run Link Tool
     while True:
         result = linkstate(destination, source, client, protocol)
-        print result
+        logging.info(result)
         if result == True:
             time.sleep(1)
-            flush(client, flush_as, 'drop', 'flush/get-neighborsq.json')
+            flush(client, flush_as, drop_policy_name, 'flush/get-neighborsq.json')
             sys.exit(1)
 
 def linkstate(destination, source, client, protocol):
-    logging.basicConfig(filename='example.log',level=logging.DEBUG)
     link = Link(destination, source, client)
     result = link.health(protocol)
-    logging.info(result)
     return result
 
 def flush(client, ext_as, drop_policy_name, bgp_config_fn):
     #calling Quan script
     print "Triggering flush"
-    flush_bgp = Flush_BGP(client, [ext_as], drop_policy_name, bgp_config_fn)
+    flush_bgp = Flush_BGP(client, [int(ext_as)], drop_policy_name, bgp_config_fn)
     rm_neighbors = flush_bgp.get_bgp_neighbors()
     print "Flush triggered"
-    for p in rm_neighbors: print p
+    logging.info(rm_neighbors)
     return
 
 if __name__ == '__main__':
