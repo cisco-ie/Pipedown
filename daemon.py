@@ -6,6 +6,7 @@ import os
 import ConfigParser
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
+from flush.bgp_flush import Flush_BGP
 def monitor(section):
     '''
     add a confiuration file details here
@@ -36,7 +37,7 @@ def monitor(section):
         print result
         if result == True:
             time.sleep(1)
-            flush(grpc_server, grpc_port, grpc_user, grpc_pass, flush_as)
+            flush(client, flush_as, drop_policy_name, 'get-neighborsq.json')
 
 def linkstate(destination, source, client, protocol):
     logging.basicConfig(filename='example.log',level=logging.DEBUG)
@@ -45,9 +46,12 @@ def linkstate(destination, source, client, protocol):
     logging.info(result)
     return result
 
-def flush(grpc_server, grpc_port, grpc_user, grpc_pass, flush_as):
+def flush(client, ext_as, drop_policy_name, bgp_config_fn):
     #calling Quan script
-    print "Trigger flush"
+    print "Triggering flush"
+    flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn)
+    rm_neighbors = flush_bgp.get_bgp_neighbors()
+    print "Removed Neighbors: " + rm_neighbors
     return
 
 if __name__ == '__main__':
