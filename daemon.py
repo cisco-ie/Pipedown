@@ -33,7 +33,7 @@ def monitor(section):
 
     #Set up gRPC client
     client = CiscoGRPCClient(grpc_server, grpc_port, 10, grpc_user, grpc_pass)
-    logging.basicConfig(filename='router_connected.log',level=logging.DEBUG)
+    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s', filename='router_connected.log', level=logging.DEBUG)
     #Monitor Link to Data Center
     while True:
         #Checking link to data center
