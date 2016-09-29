@@ -1,5 +1,6 @@
 import multiprocessing
 import sys
+import signal
 import logging
 from logging.handlers import RotatingFileHandler
 import ConfigParser
