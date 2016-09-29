@@ -11,7 +11,6 @@ def monitor(section):
     Add configuration details in here
     '''
     #Read in Configuration for Daemon
-    location = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser.ConfigParser()
     try:
         config.read('monitor.config')
@@ -29,7 +28,7 @@ def monitor(section):
         flush_as = config.get(section, 'flush_as')
         drop_policy_name = config.get(section, 'drop_policy_name')
     except (ConfigParser.Error, ValueError), e:
-	print e
+        print e
         sys.exit(1)
 
     #Set up gRPC client
@@ -61,8 +60,16 @@ def monitor(section):
 
 
 if __name__ == '__main__':
-     multiprocessing.log_to_stderr(logging.DEBUG)
-     d = multiprocessing.Process(name='myApp', target=monitor, args=('router1',))
-     d.daemon = True
-     d.start()
-     d.join()
+    config = ConfigParser.ConfigParser()
+    try:
+        config.read('monitor.config')
+        sections = config.sections()
+        print sections
+    except (ConfigParser.Error, ValueError), e:
+        print e
+        sys.exit(1)
+    multiprocessing.log_to_stderr(logging.DEBUG)
+    d = multiprocessing.Process(name='myApp', target=monitor, args=('router1',))
+    d.daemon = True
+    d.start()
+    d.join()
