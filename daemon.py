@@ -46,7 +46,7 @@ def monitor(section):
             #Flushing connection to Internet due to Data center link being faulty.
             logging.warning('Link is down, triggering Flush')
             bgp_config_fn = 'Flush/get-neighborsq.json'
-            try
+            try:
                 ext_as = flush_as.split()
                 ext_as = map(int, ext_as)
             except:
