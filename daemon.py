@@ -18,12 +18,12 @@ def monitor(section):
         destination = config.get(section, 'destination')
         source = config.get(section, 'source')
         protocol = config.get(section, 'protocol')
-        bw_thres = config.get(section, 'bw_thres')
-        jitter_thres = config.get(section, 'jitter_thres')
-        pkt_loss = config.get(section, 'pkt_loss')
-        interval = config.get(section, 'interval')
+        bw_thres = config.getint(section, 'bw_thres')
+        jitter_thres = config.getint(section, 'jitter_thres')
+        pkt_loss = config.getint(section, 'pkt_loss')
+        interval = config.getint(section, 'interval')
         grpc_server = config.get(section, 'grpc_server')
-        grpc_port = config.get(section, 'grpc_port')
+        grpc_port = config.getint(section, 'grpc_port')
         grpc_user = config.get(section, 'grpc_user')
         grpc_pass = config.get(section, 'grpc_pass')
         flush_as = config.get(section, 'flush_as')
@@ -33,12 +33,12 @@ def monitor(section):
         sys.exit(1)
 
     #Set up gRPC client
-    client = CiscoGRPCClient(grpc_server, int(grpc_port), 10, grpc_user, grpc_pass)
+    client = CiscoGRPCClient(grpc_server, grpc_port, 10, grpc_user, grpc_pass)
     logging.basicConfig(filename='router_connected.log',level=logging.DEBUG)
     #Monitor Link to Data Center
     while True:
         #Checking link to data center
-        link = Link(destination, source, client, int(bw_thres), int(jitter_thres), int(pkt_loss), int(interval))
+        link = Link(destination, source, client, bw_thres, jitter_thres, pkt_loss, interval)
         result = link.health(protocol)
         if result == False:
             logging.info('Link is good')
@@ -66,4 +66,3 @@ if __name__ == '__main__':
      d.daemon = True
      d.start()
      d.join()
-#     monitor('router1')
