@@ -64,12 +64,12 @@ if __name__ == '__main__':
     try:
         config.read('monitor.config')
         sections = config.sections()
-        print sections
     except (ConfigParser.Error, ValueError), e:
         print e
         sys.exit(1)
     multiprocessing.log_to_stderr(logging.DEBUG)
-    d = multiprocessing.Process(name='myApp', target=monitor, args=('router1',))
-    d.daemon = True
-    d.start()
-    d.join()
+    for section in sections:
+        d = multiprocessing.Process(name=section, target=monitor, args=(section,))
+        d.daemon = True
+        d.start()
+        d.join()
