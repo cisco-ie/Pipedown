@@ -2,7 +2,6 @@ import multiprocessing
 import sys
 import logging
 from logging.handlers import RotatingFileHandler
-import os
 import ConfigParser
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
@@ -17,9 +16,9 @@ def monitor(section):
     logger.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(processName)s - %(levelname)s - %(message)s')
     console_handler.setFormatter(formatter)
-    file_handler = RotatingFileHandler('router_connected.log' , mode='a', maxBytes=10000, backupCount=1, encoding=None, delay=0)
+    file_handler = RotatingFileHandler('router_connected.log' , mode='a', maxBytes=100000, backupCount=1, encoding=None, delay=0)
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
@@ -84,8 +83,8 @@ if __name__ == '__main__':
         sys.exit(1)
     multiprocessing.log_to_stderr(logging.DEBUG)
     #Spawn process per a section header
+    jobs = []
     for section in sections:
         d = multiprocessing.Process(name=section, target=monitor, args=(section,))
-        d.daemon = True
+        jobs.append(d)
         d.start()
-        d.join()
