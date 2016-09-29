@@ -38,7 +38,7 @@ def monitor(section):
     #Monitor Link to Data Center
     while True:
         #Checking link to data center
-        link = Link(destination, source, client, bw_thres, jitter_thres, pkt_loss, interval)
+        link = Link(destination, source, client, int(bw_thres), int(jitter_thres), int(pkt_loss), int(interval))
         result = link.health(protocol)
         if result == False:
             logging.info('Link is good')
