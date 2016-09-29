@@ -42,14 +42,14 @@ def monitor(section):
         result = link.health(protocol)
         if result == False:
             logging.info('Link is good')
-        else
+        else:
             #Flushing connection to Internet due to Data center link being faulty.
             logging.warning('Link is down, triggering Flush')
             bgp_config_fn = 'Flush/get-neighborsq.json'
             try
                 ext_as = flush_as.split()
                 ext_as = map(int, ext_as)
-            else
+            except:
                 logging.error('Flush AS is in the wrong format')
             flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn)
             rm_neighbors = flush_bgp.get_bgp_neighbors()
