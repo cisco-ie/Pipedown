@@ -61,7 +61,6 @@ def monitor(section):
             rm_neighbors = flush_bgp.get_bgp_neighbors()
             rm_neighbors_string = str(rm_neighbors).strip('[]')
             logger.info('Removed neighbors and policy: %s' % rm_neighbors_string)
-            #logger.info(rm_neighbors)
             break
 
 def grab_sections():
