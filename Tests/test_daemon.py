@@ -29,16 +29,16 @@ class DaemonTestCase(unittest.TestCase):
             os.path.join(self.location,'../monitor.config')
         )
         sections = monitor_daemon.grab_sections()
-        self.assertEqual(sections, ['BGP', 'IS-IS'])
+        self.assertItemsEqual(sections, ['BGP', 'IS-IS'])
 
     def test_grab_sections_no_section(self):
         copyfile(
-            os.path.join(self.location,'Config/no_sections.config'),
+            os.path.join(self.location,'Config/no_section.config'),
             os.path.join(self.location,'../monitor.config')
         )
         with self.assertRaises(SystemExit) as cm:
             sections = monitor_daemon.grab_sections()
-        self.assertEqual(cm.exception.code, 1)
+        self.assertRaisesRegexp(cm.exception.code, 'File contains no section headers')
 
     def tearDown(self):
         if os.path.isfile(os.path.join(self.location,'../monitortest.config')):

@@ -91,7 +91,7 @@ def grab_sections():
         config.read('monitor.config')
         sections = config.sections()
         return sections
-    except (ConfigParser.Error, ValueError), e:
+    except (ConfigParser.Error), e:
         sys.exit(e)
 
 def daemon():
