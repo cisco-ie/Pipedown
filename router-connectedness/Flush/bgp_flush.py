@@ -34,8 +34,7 @@ class Flush_BGP(object):
         bgp_config = self.__load_bgp_template__(self.bgp_config_fn)
 
         # get the BGP config
-        res = self.client.getconfig(bgp_config)
-
+        err, res = self.client.getconfig(bgp_config)
         # decodes the current BGP config into JSON
         self.res = json.loads(res)
 
@@ -54,13 +53,13 @@ class Flush_BGP(object):
                 # change the policy to drop
                 curr_policy = neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out']
                 neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = self.drop_policy_name
-                removed_neighbors.append(neighbor['neighbor-address'])
+                removed_neighbors.append((neighbor['neighbor-address'], curr_policy))
 
         c = json.dumps(c)
 
         # flush the neighbors from the configuration
         flush_resp = self.__flush_bgp_neighbors__(c)
-        return removed_neighbors
+        return json.dumps(removed_neighbors)
 
     def check_flush_neighbors(self, rm_neighbors):
         """ Checks if the correct neighbors were removed by checking the router's current configuration.
