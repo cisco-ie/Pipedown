@@ -28,7 +28,7 @@ class Flush_BGP(object):
         self.drop_policy_name = drop_policy_name
         self.bgp_config_fn = bgp_config_fn
         self.client = grpc_client
-	self.logger = logger
+        self.logger = logging.getLogger()
 
         # load the BGP config file
         bgp_config = self.__load_bgp_template__(self.bgp_config_fn)

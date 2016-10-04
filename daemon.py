@@ -1,6 +1,6 @@
 """
 Daemon to monitor a link to Data Center using iPerf. If the link is faulty
-deamed by the thresholds set,then the policy on the link to the Internet
+deemed by the thresholds set,then the policy on the link to the Internet
 is changed to stop peering with external routers.
 """
 import multiprocessing
@@ -41,10 +41,10 @@ def monitor(section):
         link = Link(destination, source, client, bw_thres, jitter_thres, pkt_loss, interval)
         result = link.health(protocol)
         if result is False:
-            logger.info('Link is good')
+            logger.info('Link is good.')
         else:
             #Flushing connection to Internet due to Data center link being faulty.
-            logger.critical('Link is down, triggering Flush')
+            logger.critical('Link is down, triggering Flush.')
             #This is currently static, as we support more types will add to config file.
             bgp_config_fn = 'Flush/get-neighborsq.json'
             try:

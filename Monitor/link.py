@@ -2,6 +2,7 @@
 
 import subprocess
 import logging
+import sys
 from grpc.framework.interfaces.face.face import AbortionError
 
 class Link(object):
@@ -33,7 +34,7 @@ class Link(object):
         self.server = server
         self.grpc_client = grpc_client
 
-        self.logger2 = logging.getLogger('router-connectedness.monitor')
+        self.logger = logging.getLogger()
 
     def __repr__(self):
         return '{}(Server = {}, Interface = {}, gRPC_Client = {}, ' \
@@ -112,7 +113,7 @@ class Link(object):
         out, err = process.communicate()
         if err:
             if 'Connection refused' in err:
-                self.logger2.critical('Connection refused. Check the connection to the server.')
+                self.logger.critical('Connection to iPerf server refused. Assuming link is down.')
             return True
         # Parse the output.
         transferred_bytes = float(out.splitlines()[2].split(',')[7])
@@ -155,9 +156,11 @@ class Link(object):
                 # Could there be multiple instances of the link?
                 return protocol not in output or '"active": true' not in output
             except AbortionError:
-                self.logger2.critical('Unable to connect to box, check your gRPC server.')
+                self.logger.critical('Unable to connect to local box, check your gRPC server.')
+                sys.exit(1)
         else:
-            self.logger2.error("Invalid protocol type '%s'.", protocol)
+            self.logger.error("Invalid protocol type '%s'.", protocol)
+            sys.exit(1)
 
     def health(self, protocol):
         """Check the health of the link, returns True if there is an error,
@@ -178,4 +181,5 @@ class Link(object):
             else:
                 return routing
         else:
-            self.logger2.critical('Expecting type string as the argument.')
+            self.logger.critical('Expecting type string as the argument.')
+            sys.exit(1)
