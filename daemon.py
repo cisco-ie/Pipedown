@@ -87,7 +87,8 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(processName)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter('%(asctime)s - %(processName)s - %(levelname)s - %(message)s',
+                                  '%Y-%m-%d %H:%M:%S')
     console_handler.setFormatter(formatter)
     file_handler = RotatingFileHandler(
         'router_connected.log',
