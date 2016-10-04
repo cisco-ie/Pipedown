@@ -74,8 +74,8 @@ def monitor(section):
                 ext_as = flush_as.split()
                 ext_as = map(int, ext_as)
             except TypeError:
-                logger.error('Flush AS is in the wrong format for %s node', % section)
-                sys.exit('Flush AS is in the wrong format for %s node', % section)
+                logger.error('Flush AS is in the wrong format for %s node', section)
+                sys.exit('Flush AS is in the wrong format for %s node' % section)
             flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn, logger)
             rm_neighbors = flush_bgp.get_bgp_neighbors()
             #rm_neighbors is a tuple in unicode, want to seperate the values into strings.
