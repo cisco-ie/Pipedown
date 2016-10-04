@@ -1,10 +1,10 @@
 """This module contains the Link class"""
 
 import subprocess
+import logging
 from grpc.framework.interfaces.face.face import AbortionError
-from Tools.log_utility import LogMixin
 
-class Link(object, LogMixin):
+class Link(object):
     """A class for monitoring interfaces with iPerf.
     :param server: The iPerf server ip address.
     :param interface: The outgoing interface.
@@ -32,6 +32,8 @@ class Link(object, LogMixin):
         self.interface = interface
         self.server = server
         self.grpc_client = grpc_client
+
+        logger2 = logging.getLogger('router-connectedness.monitor')
 
     def __repr__(self):
         return '{}(Server = {}, Interface = {}, gRPC_Client = {}, ' \
@@ -110,7 +112,7 @@ class Link(object, LogMixin):
         out, err = process.communicate()
         if err:
             if 'Connection refused' in err:
-                self.logger.critical('Connection refused. Check the connection to the server.')
+                self.logger2.critical('Connection refused. Check the connection to the server.')
             return True
         # Parse the output.
         transferred_bytes = float(out.splitlines()[2].split(',')[7])
@@ -153,9 +155,9 @@ class Link(object, LogMixin):
                 # Could there be multiple instances of the link?
                 return protocol not in output or '"active": true' not in output
             except AbortionError:
-                self.logger.critical('Unable to connect to box, check your gRPC server.')
+                self.logger2.critical('Unable to connect to box, check your gRPC server.')
         else:
-            self.logger.error("Invalid protocol type '%s'.", protocol)
+            self.logger2.error("Invalid protocol type '%s'.", protocol)
 
     def health(self, protocol):
         """Check the health of the link, returns True if there is an error,
@@ -176,4 +178,4 @@ class Link(object, LogMixin):
             else:
                 return routing
         else:
-            self.logger.critical('Expecting type string as the argument.')
+            self.logger2.critical('Expecting type string as the argument.')

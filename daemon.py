@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     #Set up Logging, handler for both console and file.
     #When application is finished, console will be removed.
-    logger = logging.getLogger()
+    logger = logging.getLogger() #The root logger
     logger.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
