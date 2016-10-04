@@ -13,28 +13,6 @@ from Monitor.link import Link
 from Flush.bgp_flush import Flush_BGP
 
 def monitor(section):
-    """
-    Set up Logging, handler for both console and file.
-    When application is finished, console will be removed.
-    """
-    logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(processName)s - %(levelname)s - %(message)s')
-    console_handler.setFormatter(formatter)
-    file_handler = RotatingFileHandler(
-        'router_connected.log',
-        mode='a',
-        maxBytes=100000,
-        backupCount=1,
-        encoding=None,
-        delay=0)
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
-
     #Read in Configuration for Daemon.
     config = ConfigParser.ConfigParser()
     try:
@@ -74,8 +52,8 @@ def monitor(section):
                 ext_as = flush_as.split()
                 ext_as = map(int, ext_as)
             except TypeError:
-                logger.error('Flush AS is in the wrong format for %s node', % section)
-                sys.exit('Flush AS is in the wrong format for %s node', % section)
+                logger.error('Flush AS is in the wrong format for %s node', section)
+                sys.exit('Flush AS is in the wrong format for %s node', section)
             flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn, logger)
             rm_neighbors = flush_bgp.get_bgp_neighbors()
             #rm_neighbors is a tuple in unicode, want to seperate the values into strings.
@@ -101,4 +79,24 @@ def daemon():
         d.start()
 
 if __name__ == '__main__':
+
+    #Set up Logging, handler for both console and file.
+    #When application is finished, console will be removed.
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(processName)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    file_handler = RotatingFileHandler(
+        'router_connected.log',
+        mode='a',
+        maxBytes=100000,
+        backupCount=1,
+        encoding=None,
+        delay=0)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
     daemon()

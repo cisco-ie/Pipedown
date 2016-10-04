@@ -2,8 +2,9 @@
 
 import subprocess
 from grpc.framework.interfaces.face.face import AbortionError
+from Tools.log_utility import LogMixin
 
-class Link(object):
+class Link(object, LogMixin):
     """A class for monitoring interfaces with iPerf.
     :param server: The iPerf server ip address.
     :param interface: The outgoing interface.
@@ -109,7 +110,7 @@ class Link(object):
         out, err = process.communicate()
         if err:
             if 'Connection refused' in err:
-                print 'Connection refused. Check the connection to the server.'
+                self.logger.critical('Connection refused. Check the connection to the server.')
             return True
         # Parse the output.
         transferred_bytes = float(out.splitlines()[2].split(',')[7])
@@ -152,9 +153,9 @@ class Link(object):
                 # Could there be multiple instances of the link?
                 return protocol not in output or '"active": true' not in output
             except AbortionError:
-                print 'Unable to connect to box, check your gRPC server.'
+                self.logger.critical('Unable to connect to box, check your gRPC server.')
         else:
-            print "Invalid protocol type '{}'.".format(protocol)
+            self.logger.error("Invalid protocol type '%s'.", protocol)
 
     def health(self, protocol):
         """Check the health of the link, returns True if there is an error,
@@ -175,5 +176,4 @@ class Link(object):
             else:
                 return routing
         else:
-            print "Expecting type string as the argument."
-
+            self.logger.critical('Expecting type string as the argument.')
