@@ -44,7 +44,7 @@ def monitor(section):
             logger.info('Link is good.')
         else:
             #Flushing connection to Internet due to Data center link being faulty.
-            logger.critical('Link is down, triggering Flush.')
+            logger.warning('Link is down, triggering Flush.')
             #This is currently static, as we support more types will add to config file.
             bgp_config_fn = 'Flush/get-neighborsq.json'
             try:
@@ -70,7 +70,8 @@ def daemon():
         sections = config.sections()
     except (ConfigParser.Error, ValueError), e:
         sys.exit(e)
-    multiprocessing.log_to_stderr(logging.DEBUG)
+    #I think theses messages are mostly clutter - what do you think Karthik?
+    #multiprocessing.log_to_stderr(logging.DEBUG)
     #Spawn process per a section header.
     jobs = []
     for section in sections:
@@ -79,7 +80,6 @@ def daemon():
         d.start()
 
 if __name__ == '__main__':
-
     #Set up Logging, handler for both console and file.
     #When application is finished, console will be removed.
     logger = logging.getLogger() #The root
