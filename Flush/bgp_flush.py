@@ -68,7 +68,7 @@ class Flush_BGP(object):
             params:
             rm_neighbors: list of removed BGP neighbors
         """
-        logger.info('Checking if neighbors were flushed....')
+        self.logger.info('Checking if neighbors were flushed....')
 
         # create the template for BGP neigbors
         template = {}
@@ -103,12 +103,12 @@ class Flush_BGP(object):
             if curr_policy_name != self.drop_policy_name:
                 s = "Failed policy for " + ip
                 sys.exit(s)
-        logging.info("Sucessfully flushed all BGP neighbors.")
+        self.logger.info("Successfully flushed all BGP neighbors.")
 
 
     def __flush_bgp_neighbors__(self, flush_bgp_config):
         """ Remove the neighbor from the router configuration with GRPC call. """
-        self.logger.info('flushing the bgp neighbors...')
+        self.logger.info('Flushing the bgp neighbors...')
         resp = self.client.mergeconfig(flush_bgp_config)
 
         if resp == None:
