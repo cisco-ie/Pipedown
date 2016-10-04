@@ -38,6 +38,7 @@ def monitor(section):
     client = CiscoGRPCClient(grpc_server, grpc_port, 10, grpc_user, grpc_pass)
     while True:
         #Checking link to data center.
+        logger.info('Checking link health of %s', source)
         link = Link(destination, source, client, bw_thres, jitter_thres, pkt_loss, interval)
         result = link.health(protocol)
         if result is False:
