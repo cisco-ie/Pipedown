@@ -31,7 +31,7 @@ def monitor(section):
         flush_as = config.get(section, 'flush_as')
         drop_policy_name = config.get(section, 'drop_policy_name')
     except (ConfigParser.Error, ValueError), e:
-        logging.error('Config file error: %s'  % e)
+        logger.error('Config file error: %s'  % e)
         sys.exit(1)
 
     #Set up a gRPC client.
@@ -41,10 +41,10 @@ def monitor(section):
         link = Link(destination, source, client, bw_thres, jitter_thres, pkt_loss, interval)
         result = link.health(protocol)
         if result is False:
-            logging.info('Link is good')
+            logger.info('Link is good')
         else:
             #Flushing connection to Internet due to Data center link being faulty.
-            logging.critical('Link is down, triggering Flush')
+            logger.critical('Link is down, triggering Flush')
             #This is currently static, as we support more types will add to config file.
             bgp_config_fn = 'Flush/get-neighborsq.json'
             try:
@@ -52,14 +52,14 @@ def monitor(section):
                 ext_as = flush_as.split()
                 ext_as = map(int, ext_as)
             except TypeError:
-                logging.error('Flush AS is in the wrong format for %s node', section)
+                logger.error('Flush AS is in the wrong format for %s node', section)
                 sys.exit('Flush AS is in the wrong format for %s node', section)
-            flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn, logging)
+            flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn, logger)
             rm_neighbors = flush_bgp.get_bgp_neighbors()
             #rm_neighbors is a tuple in unicode, want to seperate the values into strings.
             #rm_neighbors_string = ''.join(e.encode('ascii','ignore') for e,y in rm_neighbors)
             #rm_neighbors_string = str(rm_neighbors).strip('[]')
-            logging.info(rm_neighbors)
+            logger.info(rm_neighbors)
             break
 
 def daemon():
@@ -79,15 +79,24 @@ def daemon():
         d.start()
 
 if __name__ == '__main__':
+
     #Set up Logging, handler for both console and file.
     #When application is finished, console will be removed.
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(%(asctime)s - %(processName)s - %(levelname)s - %(message)s',
-                        filename='router_connected.log',
-                        filemode='a')
+    logger = logging.getLogger() #The root
+    logger.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(processName)s - %(levelname)s - %(message)s')
     console_handler.setFormatter(formatter)
-    logging.getLogger('Router-Connectedness').addHandler(console_handler)
+    file_handler = RotatingFileHandler(
+        'router_connected.log',
+        mode='a',
+        maxBytes=100000,
+        backupCount=1,
+        encoding=None,
+        delay=0)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
     daemon()
