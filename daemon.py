@@ -6,6 +6,10 @@ is changed to stop peering with external routers.
 import multiprocessing
 import sys
 import logging
+try:
+    import coloredlogs
+except ImportError:
+    pass
 from logging.handlers import RotatingFileHandler
 import ConfigParser
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
@@ -101,4 +105,7 @@ if __name__ == '__main__':
     file_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
+    #Colorize it!
+    if 'coloredlogs' in sys.modules:
+        coloredlogs.install(level='DEBUG')
     daemon()
