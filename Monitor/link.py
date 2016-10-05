@@ -149,7 +149,7 @@ class Link(object):
         """
         if isinstance(protocol, str):
             routing = self.check_routing(protocol)
-            if routing:
+            if not routing: #If there is NOT an error in routing.
                 iperf = self.run_iperf()
                 return iperf
             else:
