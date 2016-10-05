@@ -55,45 +55,20 @@ class Link(object):
         :param protocol: The given protocol.
         :type protocol: str
         """
-        #Check with Bruce about these protocols
         protocols = [
             'ISIS',
-            'IS-IS',
-            'IS-IS LEVEL-1',
-            'IS-IS LEVEL-2',
-            'IS-IS INTER AREA',
-            'IS-IS SUMMARY NULL',
-            'ISIS LEVEL-1',
-            'ISIS LEVEL-2',
-            'ISIS INTER AREA',
-            'ISIS SUMMARY NULL',
-            'BGP'
+            'BGP', 
+            'MOBILE',
+            'SUBSCRIBER',
+            'CONNECTED',
+            'DAGR',
+            'RIP',
+            'OSPF',
+            'STATIC',
+            'RPL',
+            'EIGRP',
+            'LOCAL',
         ]
-        # protocols = [
-        #     'ISIS',
-        #     'IS-IS',
-        #     'IS-IS LEVEL-1',
-        #     'IS-IS LEVEL-2',
-        #     'IS-IS INTER AREA',
-        #     'IS-IS SUMMARY NULL',
-        #     'BGP',
-        #     'RIP',
-        #     'OSPF',
-        #     'OSPF INTER AREA',
-        #     'OSPF NSSA EXTERNAL TYPE 1',
-        #     'OSPF EXTERNAL TYPE 2',
-        #     'EGP',
-        #     'LOCAL',
-        #     'ODR',
-        #     'PER-USER STATIC ROUTE',
-        #     'DAGR',
-        #     'FRR BACKUP PATH',
-        #     'ACCESS/SUBSCRIBER'
-        #     'STATIC',
-        #     'CONNECTED',
-        #     'EIGRP',
-        #     'EIGRP EXTERNAL',
-        # ]
         return protocol.upper() in protocols
 
     def run_iperf(self):
