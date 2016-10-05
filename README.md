@@ -6,6 +6,9 @@
 
 ```python -m unittest discover router-connectedness.Tests```
 
+For test_bgp_flush.py
+``` python -m unittest Tests.test_bgp_flush.FlushBGPTestCase```
+
 ### Integration Tests
 
 **Running iPerf Server**
