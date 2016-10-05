@@ -120,13 +120,15 @@ class Link(object):
         :type client: gRPC Client object
         """
         if self._check_protocol(protocol):
-            path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+            path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
             version = 4
+            ipv6 = ''
             if ':' in self.interface: # Checks if it is an IPv6 link.
                 version = 6
-            path = path.format(v=version, link=self.interface)
+                ipv6 = 'ipv6-'
+            path = path.format(v=version, ipv6=ipv6, link=self.interface)
             try:
-                output = self.grpc_client.getoper(path)
+                err, output = self.grpc_client.getoper(path)
                 # Could there be multiple instances of the link?
                 return protocol not in output or '"active": true' not in output
             except AbortionError:
