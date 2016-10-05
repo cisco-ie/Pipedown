@@ -145,8 +145,11 @@ class Link(object):
         :type client: gRPC Client object
         """
         if self._check_protocol(protocol):
-            path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
-            path = path.format(link=self.interface)
+            path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+            version = 4
+            if ':' in self.interface: # Checks if it is an IPv6 link.
+                version = 6
+            path = path.format(v=version, link=self.interface)
             try:
                 output = self.grpc_client.getoper(path)
                 # Could there be multiple instances of the link?
