@@ -25,7 +25,8 @@ class CiscoGRPCClient(object):
             self._creds = implementations.ssl_channel_credentials(creds)
             self._options = options
             channel = grpc.secure_channel(
-            self._target, self._creds, (('grpc.ssl_target_name_override', self._options,),))
+                self._target, self._creds, (('grpc.ssl_target_name_override', self._options,),)
+                )
             self._channel = implementations.Channel(channel)
         else:
             self._host = host
@@ -53,45 +54,46 @@ class CiscoGRPCClient(object):
             :rtype: Response stream object
         """
         message = ems_grpc_pb2.ConfigGetArgs(yangpathjson=path)
-        responses = self._stub.GetConfig(message,self._timeout, metadata = self._metadata)
-        objects = ''
+        responses = self._stub.GetConfig(message, self._timeout, metadata=self._metadata)
+        objects, err = '', ''
         for response in responses:
             objects += response.yangjson
-        return objects
+            err += response.errors
+        return err, objects
 
-    def mergeconfig (self, yangjson):
+    def mergeconfig(self, yangjson):
         """Merge grpc call equivalent  of PATCH RESTconf call
             :param data: JSON
             :type data: str
             :return: Return the response object
             :rtype: Response object
         """
-        message = ems_grpc_pb2.ConfigArgs(yangjson= yangjson)
-        response = self._stub.MergeConfig(message, self._timeout, metadata = self._metadata)
+        message = ems_grpc_pb2.ConfigArgs(yangjson=yangjson)
+        response = self._stub.MergeConfig(message, self._timeout, metadata=self._metadata)
         return response
 
-    def deleteconfig (self, yangjson):
+    def deleteconfig(self, yangjson):
         """delete grpc call
             :param data: JSON
             :type data: str
             :return: Return the response object
             :rtype: Response object
         """
-        message = ems_grpc_pb2.ConfigArgs(yangjson= yangjson)
-        response = self._stub.DeleteConfig(message, self._timeout, metadata = self._metadata)
+        message = ems_grpc_pb2.ConfigArgs(yangjson=yangjson)
+        response = self._stub.DeleteConfig(message, self._timeout, metadata=self._metadata)
         return response
 
-    def replaceconfig (self, yangjson):
+    def replaceconfig(self, yangjson):
         """Replace grpc call equivalent of PUT in restconf
             :param data: JSON
             :type data: str
             :return: Return the response object
             :rtype: Response object
         """
-        message = ems_grpc_pb2.ConfigArgs(yangjson= yangjson)
-        response= self._stub.ReplaceConfig(message, self._timeout, metadata = self._metadata)
+        message = ems_grpc_pb2.ConfigArgs(yangjson=yangjson)
+        response = self._stub.ReplaceConfig(message, self._timeout, metadata=self._metadata)
         return response
-    def getoper (self, path):
+    def getoper(self, path):
         """ Get Oper call
             :param data: JSON
             :type data: str
@@ -99,11 +101,12 @@ class CiscoGRPCClient(object):
             :rtype: Response stream object
         """
         message = ems_grpc_pb2.GetOperArgs(yangpathjson=path)
-        responses = self._stub.GetOper(message,self._timeout, metadata = self._metadata)
-        objects = ''
+        responses = self._stub.GetOper(message, self._timeout, metadata=self._metadata)
+        objects, err = '', ''
         for response in responses:
             objects += response.yangjson
-        return objects
+            err += response.errors
+        return err, objects
 
     def cliconfig(self, cli):
         """Post of CLI config commands in text
@@ -112,11 +115,11 @@ class CiscoGRPCClient(object):
             :return: Return the response object
             :rtype: str
         """
-        message = ems_grpc_pb2.CliConfigArgs(cli = cli)
-        response = self._stub.CliConfig(message, self._timeout, metadata = self._metadata)
+        message = ems_grpc_pb2.CliConfigArgs(cli=cli)
+        response = self._stub.CliConfig(message, self._timeout, metadata=self._metadata)
         return response
 
-    def showcmdtextoutput (self, cli):
+    def showcmdtextoutput(self, cli):
         """ Get of CLI show commands in text
             :param data: cli show
             :type data: str
@@ -124,14 +127,15 @@ class CiscoGRPCClient(object):
             :rtype: str
         """
         stub = ems_grpc_pb2.beta_create_gRPCExec_stub(self._channel)
-        message = ems_grpc_pb2.ShowCmdArgs(cli = cli)
-        responses = stub.ShowCmdTextOutput(message, self._timeout, metadata = self._metadata)
-        objects = ''
+        message = ems_grpc_pb2.ShowCmdArgs(cli=cli)
+        responses = stub.ShowCmdTextOutput(message, self._timeout, metadata=self._metadata)
+        objects, err = '', ''
         for response in responses:
             objects += response.output
-        return objects
+            err += response.errors
+        return err, objects
 
-    def showcmdjsonoutput (self, cli):
+    def showcmdjsonoutput(self, cli):
         """ Get of CLI show commands in json
             :param data: cli show
             :type data: str
@@ -139,13 +143,10 @@ class CiscoGRPCClient(object):
             :rtype: str
         """
         stub = ems_grpc_pb2.beta_create_gRPCExec_stub(self._channel)
-        message = ems_grpc_pb2.ShowCmdArgs(cli = cli)
-        responses = stub.ShowCmdJSONOutput(message, self._timeout, metadata = self._metadata)
-        objects = ''
+        message = ems_grpc_pb2.ShowCmdArgs(cli=cli)
+        responses = stub.ShowCmdJSONOutput(message, self._timeout, metadata=self._metadata)
+        objects, err = '', ''
         for response in responses:
             objects += response.jsonoutput
-        return objects
-
-
-
-
+            err += response.errors
+        return err, objects
