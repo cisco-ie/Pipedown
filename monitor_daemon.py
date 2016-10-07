@@ -84,7 +84,7 @@ def monitor(section):
             logger.info(rm_neighbors)
             break
 
-def daemon():
+def grab_sections():
     #Reading config file for section headers.
     config = ConfigParser.ConfigParser()
     try:
@@ -92,6 +92,9 @@ def daemon():
         sections = config.sections()
     except (ConfigParser.Error, ValueError), e:
         sys.exit(e)
+
+def daemon():
+    sections = grab_sections()
     multiprocessing.log_to_stderr(logging.DEBUG)
     #Spawn process per a section header.
     jobs = []
