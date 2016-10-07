@@ -23,6 +23,23 @@ class DaemonTestCase(unittest.TestCase):
         sections = monitor_daemon.grab_sections()
         self.assertEqual(sections, ['BGP'])
 
+    def test_grab_sections_multiplesections(self):
+        copyfile(
+            os.path.join(self.location,'Config/multiple_sections.config'),
+            os.path.join(self.location,'../monitor.config')
+        )
+        sections = monitor_daemon.grab_sections()
+        self.assertEqual(sections, ['BGP', 'IS-IS'])
+
+    def test_grab_sections_no_section(self):
+        copyfile(
+            os.path.join(self.location,'Config/no_sections.config'),
+            os.path.join(self.location,'../monitor.config')
+        )
+        with self.assertRaises(SystemExit) as cm:
+            sections = monitor_daemon.grab_sections()
+        self.assertEqual(cm.exception.code, 1)
+
     def tearDown(self):
         if os.path.isfile(os.path.join(self.location,'../monitortest.config')):
             move(
