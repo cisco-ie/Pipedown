@@ -73,7 +73,7 @@ def monitor(section):
                 # Putting string of AS into a list
                 ext_as = flush_as.split()
                 ext_as = map(int, ext_as)
-            except TypeError:
+            except ValueError:
                 logger.error('Flush AS is in the wrong format for %s node', section)
                 sys.exit(1)
             flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn, logger)
