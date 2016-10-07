@@ -53,9 +53,14 @@ class DaemonTestCase(unittest.TestCase):
             self.assertRegexpMatches(log, 'Config file error:')
         self.assertEqual(cm.exception.code, 1)
 
-    @mock.patch('Monitor.link.health')
+    @mock.patch('Monitor.link.Link.health')
     def test_link_good_log(self, health_function):
+        copyfile(
+            os.path.join(self.location,'Config/monitor_good.config'),
+            os.path.join(self.location,'../monitor.config')
+        )
         health_function.return_value = True
+        monitor_daemon.monitor('BGP')
         with open(os.path.join(self.location,'../router_connected.log')) as debug_log:
             log = debug_log.readlines()[0]
         self.assertRegexpMatches(log, 'Link is good')
