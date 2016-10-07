@@ -1,5 +1,6 @@
 import unittest
 import os
+import mock
 from shutil import copyfile, move
 import sys
 sys.path.append(
@@ -51,6 +52,13 @@ class DaemonTestCase(unittest.TestCase):
             log = debug_log.readlines()[0]
             self.assertRegexpMatches(log, 'Config file error:')
         self.assertEqual(cm.exception.code, 1)
+
+    @mock.patch('Monitor.link.health')
+    def test_link_good_log(self, health_function):
+        health_function.return_value = True
+        with open(os.path.join(self.location,'../router_connected.log')) as debug_log:
+            log = debug_log.readlines()[0]
+        self.assertRegexpMatches(log, 'Link is good')
 
     def tearDown(self):
         if os.path.isfile(os.path.join(self.location,'../monitortest.config')):
