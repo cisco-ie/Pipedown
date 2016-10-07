@@ -5,10 +5,10 @@ import sys
 sys.path.append("..")
 import monitor_daemon
 
-class DaemonTestCase(unittest.TestCase, object):
+class DaemonTestCase(unittest.TestCase):
     def setUp(self):
         if os.path.isfile('../../monitor.config'):
-            os.move(
+            move(
                 '../../monitor.config',
                 '../../monitortest.config'
             )
@@ -20,6 +20,13 @@ class DaemonTestCase(unittest.TestCase, object):
         )
         sections = monitor_daemon.grab_sections()
         self.assertEqual(sections, ['BGP'])
+
+    def tearDown(self):
+        if os.path.isfile('../../monitortest.config'):
+            move(
+                '../../monitortest.config',
+                '../../monitor.config'
+            )
 
 if __name__ == '__main__':
     unittest.main()

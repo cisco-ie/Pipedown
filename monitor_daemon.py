@@ -90,6 +90,7 @@ def grab_sections():
     try:
         config.read('monitor.config')
         sections = config.sections()
+        return sections
     except (ConfigParser.Error, ValueError), e:
         sys.exit(e)
 
