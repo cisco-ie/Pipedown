@@ -63,10 +63,9 @@ class DaemonTestCase(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             monitor_daemon.monitor('BGP')
         with open(os.path.join(self.location,'../router_connected.log')) as debug_log:
-            log = debug_log.readlines()[2]
+            log = debug_log.readlines()[1]
             self.assertRegexpMatches(log, 'Flush AS is in the wrong format for')
         self.assertEqual(cm.exception.code, 1)
-
 
     @mock.patch('monitor_daemon.Link.health', side_effect = [False, True])
     @mock.patch('monitor_daemon.Flush_BGP.get_bgp_neighbors', return_value = 'Testing')
