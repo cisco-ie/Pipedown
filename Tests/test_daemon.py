@@ -54,6 +54,20 @@ class DaemonTestCase(unittest.TestCase):
             self.assertRegexpMatches(log, 'Config file error:')
         self.assertEqual(cm.exception.code, 1)
 
+    @mock.patch('monitor_daemon.Link.health', side_effect = [True])
+    def test_bad_as_format(self, mock_health):
+        copyfile(
+            os.path.join(self.location,'Config/bad_as.config'),
+            os.path.join(self.location,'../monitor.config')
+        )
+        with self.assertRaises(SystemExit) as cm:
+            monitor_daemon.monitor('BGP')
+        with open(os.path.join(self.location,'../router_connected.log')) as debug_log:
+            log = debug_log.readlines()[0]
+            self.assertRegexpMatches(log, 'Flush AS is in the wrong format for')
+        self.assertEqual(cm.exception.code, 1)
+
+
     @mock.patch('monitor_daemon.Link.health', side_effect = [False, True])
     @mock.patch('monitor_daemon.Flush_BGP.get_bgp_neighbors', return_value = 'Testing')
     def test_link_good_log(self, mock_health, mock_flush):
