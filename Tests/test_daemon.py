@@ -56,7 +56,7 @@ class DaemonTestCase(unittest.TestCase):
 
     @mock.patch('monitor_daemon.Link.health', side_effect = [False, True])
     @mock.patch('monitor_daemon.Flush_BGP.get_bgp_neighbors', return_value = 'Testing')
-    def test_link_good_log(self, health_function):
+    def test_link_good_log(self, mock_health, mock_flush):
         copyfile(
             os.path.join(self.location,'Config/monitor_good.config'),
             os.path.join(self.location,'../monitor.config')
