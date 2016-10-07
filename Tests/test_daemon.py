@@ -63,7 +63,7 @@ class DaemonTestCase(unittest.TestCase):
         with self.assertRaises(SystemExit) as cm:
             monitor_daemon.monitor('BGP')
         with open(os.path.join(self.location,'../router_connected.log')) as debug_log:
-            log = debug_log.readlines()[0]
+            log = debug_log.readlines()[2]
             self.assertRegexpMatches(log, 'Flush AS is in the wrong format for')
         self.assertEqual(cm.exception.code, 1)
 
