@@ -63,7 +63,7 @@ class DaemonTestCase(unittest.TestCase):
         monitor_daemon.monitor('BGP')
         with open(os.path.join(self.location,'../router_connected.log')) as debug_log:
             good_log = debug_log.readlines()[1]
-            bad_log = debug.log.readlines()[3]
+            bad_log = debug_log.readlines()[3]
         self.assertRegexpMatches(good_log, 'Link is good')
         self.assertRegexpMatches(bad_log, 'Link is down')
 
