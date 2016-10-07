@@ -40,6 +40,18 @@ class DaemonTestCase(unittest.TestCase):
             sections = monitor_daemon.grab_sections()
         self.assertRaisesRegexp(cm.exception.code, 'File contains no section headers')
 
+    def test_grab_sections_misssing_object(self):
+        copyfile(
+            os.path.join(self.location,'Config/no_protocol.config'),
+            os.path.join(self.location,'../monitor.config')
+        )
+        with self.assertRaises(SystemExit) as cm:
+            monitor_daemon.monitor('BGP')
+        with open(os.path.join(self.location,'../router_connected.log')) as debug_log:
+            log = debug_log.readlines()[0]
+            self.assertRegexpMatches(log, 'Config file error:')
+        self.assertEqual(cm.exception.code, 1)
+
     def tearDown(self):
         if os.path.isfile(os.path.join(self.location,'../monitortest.config')):
             move(
