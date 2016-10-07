@@ -15,6 +15,7 @@ class DaemonTestCase(unittest.TestCase):
                 os.path.join(self.location,'../monitor.config'),
                 os.path.join(self.location,'../monitortest.config')
             )
+        open(os.path.join(self.location, '../router_connected.log'), 'w').close()
 
     def test_grab_sections_good(self):
         copyfile(
@@ -61,8 +62,10 @@ class DaemonTestCase(unittest.TestCase):
         )
         monitor_daemon.monitor('BGP')
         with open(os.path.join(self.location,'../router_connected.log')) as debug_log:
-            log = debug_log.readlines()[0]
-        self.assertRegexpMatches(log, 'Link is good')
+            good_log = debug_log.readlines()[1]
+            bad_log = debug.log.readlines()[3]
+        self.assertRegexpMatches(good_log, 'Link is good')
+        self.assertRegexpMatches(bad_log, 'Link is down')
 
     def tearDown(self):
         if os.path.isfile(os.path.join(self.location,'../monitortest.config')):
