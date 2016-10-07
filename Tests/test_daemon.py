@@ -18,7 +18,7 @@ class DaemonTestCase(unittest.TestCase, object):
             'Config/monitor_good.config',
             '../../monitor.config'
         )
-        sections = daemon.grab_sections()
+        sections = monitor_daemon.grab_sections()
         self.assertEqual(sections, ['BGP'])
 
 if __name__ == '__main__':
