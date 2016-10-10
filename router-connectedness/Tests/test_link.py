@@ -3,9 +3,6 @@ import os
 from mock import patch
 from Monitor.link import Link
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
-#sys.path.append(
-#    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
-#import daemon
 
 class LinkTestCase(unittest.TestCase, object):
     @staticmethod
