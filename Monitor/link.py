@@ -59,45 +59,20 @@ class Link(object):
         :param protocol: The given protocol.
         :type protocol: str
         """
-        #Check with Bruce about these protocols
         protocols = [
             'ISIS',
-            'IS-IS',
-            'IS-IS LEVEL-1',
-            'IS-IS LEVEL-2',
-            'IS-IS INTER AREA',
-            'IS-IS SUMMARY NULL',
-            'ISIS LEVEL-1',
-            'ISIS LEVEL-2',
-            'ISIS INTER AREA',
-            'ISIS SUMMARY NULL',
-            'BGP'
+            'BGP', 
+            'MOBILE',
+            'SUBSCRIBER',
+            'CONNECTED',
+            'DAGR',
+            'RIP',
+            'OSPF',
+            'STATIC',
+            'RPL',
+            'EIGRP',
+            'LOCAL',
         ]
-        # protocols = [
-        #     'ISIS',
-        #     'IS-IS',
-        #     'IS-IS LEVEL-1',
-        #     'IS-IS LEVEL-2',
-        #     'IS-IS INTER AREA',
-        #     'IS-IS SUMMARY NULL',
-        #     'BGP',
-        #     'RIP',
-        #     'OSPF',
-        #     'OSPF INTER AREA',
-        #     'OSPF NSSA EXTERNAL TYPE 1',
-        #     'OSPF EXTERNAL TYPE 2',
-        #     'EGP',
-        #     'LOCAL',
-        #     'ODR',
-        #     'PER-USER STATIC ROUTE',
-        #     'DAGR',
-        #     'FRR BACKUP PATH',
-        #     'ACCESS/SUBSCRIBER'
-        #     'STATIC',
-        #     'CONNECTED',
-        #     'EIGRP',
-        #     'EIGRP EXTERNAL',
-        # ]
         return protocol.upper() in protocols
 
     def run_iperf(self):
@@ -149,10 +124,15 @@ class Link(object):
         :type client: gRPC Client object
         """
         if self._check_protocol(protocol):
-            path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
-            path = path.format(link=self.interface)
+            path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+            version = 4
+            ipv6 = ''
+            if ':' in self.interface: # Checks if it is an IPv6 link.
+                version = 6
+                ipv6 = 'ipv6-'
+            path = path.format(v=version, ipv6=ipv6, link=self.interface)
             try:
-                output = self.grpc_client.getoper(path)
+                err, output = self.grpc_client.getoper(path)
                 # Could there be multiple instances of the link?
                 return protocol not in output or '"active": true' not in output
             except AbortionError:
@@ -175,7 +155,7 @@ class Link(object):
         """
         if isinstance(protocol, str):
             routing = self.check_routing(protocol)
-            if routing:
+            if not routing: #If there is NOT an error in routing.
                 iperf = self.run_iperf()
                 return iperf
             else:
