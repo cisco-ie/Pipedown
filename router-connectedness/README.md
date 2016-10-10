@@ -6,7 +6,7 @@
 
 Do this at the top-level directory:
 
-```python -m unittest discover router-connectedness.Tests```
+```python -m unittest discover Tests```
 
 ### Integration Tests
 
