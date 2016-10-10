@@ -45,17 +45,18 @@ class LinkTestCase(unittest.TestCase, object):
     @patch('Monitor.link.Link.run_iperf')
     def test_health(self, mock_iperf, mock_routing):
         protocol = 'ISIS'
-        mock_routing.return_value = False
-        self.assertFalse(self.link.health(protocol))
-        mock_iperf.assert_not_called()
-
+        #Problem with the link.
         mock_routing.return_value = True
-        mock_iperf.return_value = True
         self.assertTrue(self.link.health(protocol))
-
-        mock_routing.return_value = True
+        mock_iperf.assert_not_called()
+        #No problems!
+        mock_routing.return_value = False
         mock_iperf.return_value = False
         self.assertFalse(self.link.health(protocol))
+        #Problem with iPerf.
+        mock_routing.return_value = False
+        mock_iperf.return_value = True
+        self.assertTrue(self.link.health(protocol))
 
     def test_check_protocol(self):
         self.assertFalse(self.link._check_protocol(''))
@@ -66,24 +67,21 @@ class LinkTestCase(unittest.TestCase, object):
 
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
     def test_check_routing(self, mock_get):
+        #Need to rewrite this with err being equal to something.
         with self.assertRaises(SystemExit):
             self.link.check_routing('bad')
             mock_get.assert_not_called()
-
+        err = ''
         output_good = self.read_file('Examples/protocol-active.txt')
-        mock_get.return_value = output_good
+        mock_get.return_value = err, output_good
         self.assertFalse(self.link.check_routing('isis'))
         self.assertTrue(self.link.check_routing('bgp'))
 
-        output_bad = self.read_file('Examples/non-active.txt')
-        mock_get.return_value = output_bad
-        self.assertTrue(self.link.check_routing('isis'))
-
         output_bad = self.read_file('Examples/bad-protocol.txt')
-        mock_get.return_value = output_bad
+        mock_get.return_value = err, output_bad
         self.assertTrue(self.link.check_routing('isis'))
-
-
-
-
-
+        
+        err = 'error!'
+        output_bad = self.read_file('Examples/non-active.txt')
+        mock_get.return_value = err, output_bad
+        self.assertTrue(self.link.check_routing('isis'))

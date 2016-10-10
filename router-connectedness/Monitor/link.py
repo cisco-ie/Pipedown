@@ -133,7 +133,8 @@ class Link(object):
             path = path.format(v=version, ipv6=ipv6, link=self.interface)
             try:
                 err, output = self.grpc_client.getoper(path)
-                # Could there be multiple instances of the link?
+                if err:
+                    self.logger.warning('A gRPC error occurred: %s', err.message)
                 return protocol not in output or '"active": true' not in output
             except AbortionError:
                 self.logger.critical('Unable to connect to local box, check your gRPC server.')
