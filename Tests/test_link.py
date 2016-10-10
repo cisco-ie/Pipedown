@@ -3,6 +3,9 @@ import os
 from mock import patch
 from Monitor.link import Link
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
+#sys.path.append(
+#    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+#import daemon
 
 class LinkTestCase(unittest.TestCase, object):
     @staticmethod
@@ -13,7 +16,8 @@ class LinkTestCase(unittest.TestCase, object):
             return f.read()
 
     @classmethod
-    def setUpClass(cls):
+    @patch('Monitor.link.logging.getLogger')
+    def setUpClass(cls, mock_logging):
         cls.grpc_client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'test', 'test')
         cls.link = Link('10.1.1.1', '10.1.1.2', cls.grpc_client)
 
@@ -62,12 +66,12 @@ class LinkTestCase(unittest.TestCase, object):
         self.assertFalse(self.link._check_protocol('bad'))
         self.assertTrue(self.link._check_protocol('bgp'))
         self.assertTrue(self.link._check_protocol('isis'))
-        self.assertTrue(self.link._check_protocol('isis summary null'))
 
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
     def test_check_routing(self, mock_get):
-        self.link.check_routing('bad')
-        mock_get.assert_not_called()
+        with self.assertRaises(SystemExit):
+            self.link.check_routing('bad')
+            mock_get.assert_not_called()
 
         output_good = self.read_file('Examples/protocol-active.txt')
         mock_get.return_value = output_good
