@@ -1,7 +1,7 @@
 import unittest
 import os
-import mock
 from shutil import copyfile, move
+import mock
 import sys
 sys.path.append(
     os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
@@ -69,12 +69,14 @@ class DaemonTestCase(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     @mock.patch('monitor_daemon.Link.health', side_effect=[False, True])
-    @mock.patch('monitor_daemon.Flush_BGP.get_bgp_neighbors', return_value='Testing')
-    def test_link_good_log(self, mock_health, mock_flush):
+    @mock.patch('monitor_daemon.Flush_BGP')
+    def test_link_good_log(self, mock_flush, mock_health):
         copyfile(
             os.path.join(self.location, 'Config/monitor_good.config'),
             os.path.join(self.location, '../monitor.config')
         )
+        mock_flush.returnvalue = None
+        mock_flush.get_bgp_neighbors.returnvalue = 'Testing'
         monitor_daemon.monitor('BGP')
         with open(os.path.join(self.location, '../router_connected.log')) as debug_log:
             log = debug_log.readlines()
