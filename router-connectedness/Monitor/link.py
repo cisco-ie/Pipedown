@@ -1,6 +1,8 @@
 """This module contains the Link class"""
 
 import subprocess
+import logging
+import sys
 from grpc.framework.interfaces.face.face import AbortionError
 
 class Link(object):
@@ -32,6 +34,8 @@ class Link(object):
         self.server = server
         self.grpc_client = grpc_client
 
+        self.logger = logging.getLogger()
+
     def __repr__(self):
         return '{}(Server = {}, Interface = {}, gRPC_Client = {}, ' \
                 'Bandwidth_Threshold = {}, Jitter_Threshold = {}, ' \
@@ -55,45 +59,20 @@ class Link(object):
         :param protocol: The given protocol.
         :type protocol: str
         """
-        #Check with Bruce about these protocols
         protocols = [
             'ISIS',
-            'IS-IS',
-            'IS-IS LEVEL-1',
-            'IS-IS LEVEL-2',
-            'IS-IS INTER AREA',
-            'IS-IS SUMMARY NULL',
-            'ISIS LEVEL-1',
-            'ISIS LEVEL-2',
-            'ISIS INTER AREA',
-            'ISIS SUMMARY NULL',
-            'BGP'
+            'BGP', 
+            'MOBILE',
+            'SUBSCRIBER',
+            'CONNECTED',
+            'DAGR',
+            'RIP',
+            'OSPF',
+            'STATIC',
+            'RPL',
+            'EIGRP',
+            'LOCAL',
         ]
-        # protocols = [
-        #     'ISIS',
-        #     'IS-IS',
-        #     'IS-IS LEVEL-1',
-        #     'IS-IS LEVEL-2',
-        #     'IS-IS INTER AREA',
-        #     'IS-IS SUMMARY NULL',
-        #     'BGP',
-        #     'RIP',
-        #     'OSPF',
-        #     'OSPF INTER AREA',
-        #     'OSPF NSSA EXTERNAL TYPE 1',
-        #     'OSPF EXTERNAL TYPE 2',
-        #     'EGP',
-        #     'LOCAL',
-        #     'ODR',
-        #     'PER-USER STATIC ROUTE',
-        #     'DAGR',
-        #     'FRR BACKUP PATH',
-        #     'ACCESS/SUBSCRIBER'
-        #     'STATIC',
-        #     'CONNECTED',
-        #     'EIGRP',
-        #     'EIGRP EXTERNAL',
-        # ]
         return protocol.upper() in protocols
 
     def run_iperf(self):
@@ -109,7 +88,7 @@ class Link(object):
         out, err = process.communicate()
         if err:
             if 'Connection refused' in err:
-                print 'Connection refused. Check the connection to the server.'
+                self.logger.critical('Connection to iPerf server refused. Assuming link is down.')
             return True
         # Parse the output.
         transferred_bytes = float(out.splitlines()[2].split(',')[7])
@@ -145,16 +124,24 @@ class Link(object):
         :type client: gRPC Client object
         """
         if self._check_protocol(protocol):
-            path = '{{"Cisco-IOS-XR-ip-rib-ipv4-oper:rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
-            path = path.format(link=self.interface)
+            path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+            version = 4
+            ipv6 = ''
+            if ':' in self.interface: # Checks if it is an IPv6 link.
+                version = 6
+                ipv6 = 'ipv6-'
+            path = path.format(v=version, ipv6=ipv6, link=self.interface)
             try:
-                output = self.grpc_client.getoper(path)
-                # Could there be multiple instances of the link?
+                err, output = self.grpc_client.getoper(path)
+                if err:
+                    self.logger.warning('A gRPC error occurred: %s', err.message)
                 return protocol not in output or '"active": true' not in output
             except AbortionError:
-                print 'Unable to connect to box, check your gRPC server.'
+                self.logger.critical('Unable to connect to local box, check your gRPC server.')
+                sys.exit(1)
         else:
-            print "Invalid protocol type '{}'.".format(protocol)
+            self.logger.error("Invalid protocol type '%s'.", protocol)
+            sys.exit(1)
 
     def health(self, protocol):
         """Check the health of the link, returns True if there is an error,
@@ -169,11 +156,11 @@ class Link(object):
         """
         if isinstance(protocol, str):
             routing = self.check_routing(protocol)
-            if routing:
+            if not routing: #If there is NOT an error in routing.
                 iperf = self.run_iperf()
                 return iperf
             else:
                 return routing
         else:
-            print "Expecting type string as the argument."
-
+            self.logger.critical('Expecting type string as the argument.')
+            sys.exit(1)
