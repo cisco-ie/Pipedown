@@ -5,12 +5,13 @@ is changed to stop peering with external routers.
 """
 import multiprocessing
 import sys
-import logging
-from logging.handlers import RotatingFileHandler
 import ConfigParser
+import log
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
 from Flush.bgp_flush import Flush_BGP
+
+logger = log.log()
 
 def monitor(section):
     #Read in Configuration for Daemon.
@@ -75,8 +76,8 @@ def grab_sections():
         sys.exit(e)
 
 def daemon():
-    sections = grab_sections()
     #Spawn process per a section header.
+    sections = grab_sections()
     jobs = []
     for section in sections:
         d = multiprocessing.Process(name=section, target=monitor, args=(section,))
@@ -84,24 +85,4 @@ def daemon():
         d.start()
 
 if __name__ == '__main__':
-    #Set up Logging, handler for both console and file.
-    #When application is finished, console will be removed.
-    logger = logging.getLogger() #The root
-    logger.setLevel(logging.DEBUG)
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(processName)s - %(levelname)s - %(message)s',
-                                  '%Y-%m-%d %H:%M:%S')
-    console_handler.setFormatter(formatter)
-    file_handler = RotatingFileHandler(
-        'router_connected.log',
-        mode='a',
-        maxBytes=100000,
-        backupCount=1,
-        encoding=None,
-        delay=0)
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
     daemon()
