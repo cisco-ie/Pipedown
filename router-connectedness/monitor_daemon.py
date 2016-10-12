@@ -62,7 +62,8 @@ def monitor(section):
             #rm_neighbors is a tuple in unicode, want to seperate the values into strings.
             #rm_neighbors_string = ''.join(e.encode('ascii','ignore') for e,y in rm_neighbors)
             #rm_neighbors_string = str(rm_neighbors).strip('[]')
-            logger.info(rm_neighbors)
+            rm_neighbors_string = str(rm_neighbors).strip('[]')
+            logger.info('Neighbors removed: %s' % rm_neighbors_string)
             break
 
 def grab_sections():

@@ -54,7 +54,7 @@ class Flush_BGP(object):
                 # change the policy to drop
                 curr_policy = neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out']
                 neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = self.drop_policy_name
-                removed_neighbors.append((neighbor['neighbor-address'], curr_policy))
+                removed_neighbors.append(neighbor['neighbor-address'])
 
         c = json.dumps(c)
 
