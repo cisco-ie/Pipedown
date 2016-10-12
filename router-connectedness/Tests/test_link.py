@@ -1,6 +1,6 @@
 import unittest
 import os
-from mock import patch
+from mock import patch, Mock
 from Monitor.link import Link
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
@@ -67,7 +67,6 @@ class LinkTestCase(unittest.TestCase, object):
 
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
     def test_check_routing(self, mock_get):
-        #Need to rewrite this with err being equal to something.
         with self.assertRaises(SystemExit):
             self.link.check_routing('bad')
             mock_get.assert_not_called()
@@ -80,8 +79,8 @@ class LinkTestCase(unittest.TestCase, object):
         output_bad = self.read_file('Examples/bad-protocol.txt')
         mock_get.return_value = err, output_bad
         self.assertTrue(self.link.check_routing('isis'))
-        
-        err = 'error!'
+
+        err = Mock(message='error')
         output_bad = self.read_file('Examples/non-active.txt')
         mock_get.return_value = err, output_bad
         self.assertTrue(self.link.check_routing('isis'))
