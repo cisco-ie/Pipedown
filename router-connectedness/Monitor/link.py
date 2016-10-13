@@ -3,6 +3,7 @@
 import subprocess
 import logging
 import sys
+from ast import literal_eval
 from grpc.framework.interfaces.face.face import AbortionError
 
 class Link(object):
@@ -132,11 +133,11 @@ class Link(object):
             path = path.format(v=version, ipv6=ipv6, link=self.interface)
             try:
                 err, output = self.grpc_client.getoper(path)
-            if err:
-                err = literal_eval(err)
-                message = err["cisco-grpc:errors"]["error"][0]["error-message"]
-                self.logger.warning('A gRPC error occurred: %s', message)
-            return protocol not in output or '"active": true' not in output
+                if err:
+                    err = literal_eval(err)
+                    message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+                    self.logger.warning('A gRPC error occurred: %s', message)
+                return protocol not in output or '"active": true' not in output
             except AbortionError:
                 self.logger.critical('Unable to connect to local box, check your gRPC server.')
                 sys.exit(1)
