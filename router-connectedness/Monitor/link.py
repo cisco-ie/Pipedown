@@ -33,7 +33,6 @@ class Link(object):
         self.interface = interface
         self.server = server
         self.grpc_client = grpc_client
-
         self.logger = logging.getLogger()
 
     def __repr__(self):
@@ -133,9 +132,11 @@ class Link(object):
             path = path.format(v=version, ipv6=ipv6, link=self.interface)
             try:
                 err, output = self.grpc_client.getoper(path)
-                if err:
-                    self.logger.warning('A gRPC error occurred: %s', err.message)
-                return protocol not in output or '"active": true' not in output
+            if err:
+                err = literal_eval(err)
+                message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+                self.logger.warning('A gRPC error occurred: %s', message)
+            return protocol not in output or '"active": true' not in output
             except AbortionError:
                 self.logger.critical('Unable to connect to local box, check your gRPC server.')
                 sys.exit(1)

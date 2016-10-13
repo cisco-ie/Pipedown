@@ -2,9 +2,6 @@ import unittest
 import os
 from shutil import copyfile, move
 import mock
-import sys
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
 import monitor_daemon
 
 
