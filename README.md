@@ -18,7 +18,7 @@ Currently for monitoring multiple links, each link needs to have its own source 
 
 For an easy Router-Connectedness-in-a-box demonstration, please refer to the [vagrant](https://bitbucket.org/innovationedge/vagrant) directory. Here you will be able to download a fully functional vagrant environment that has Router-Connectedness up and running already.
 
-### Usage
+## Usage
 
 Step 1: Clone this repo and cd into router-connectedness
 
@@ -39,6 +39,7 @@ Step 3: Install gRPC.
 Step 4: Configuring the router.
 
 Ensure these things are configured on the router:
+
 - Turn on gRPC.
 - Route-policy that will drop everything, (how the app flushes the internet connection).
 
@@ -48,7 +49,7 @@ Step 5: Create a monitor.config file in the router-connectedness directory and f
 [Name-for-connection]
 destination : ip_address # IP address of where iPerf is running in the data center
 source : ip_address # IP address of your souce link
-protocol : protocol # Protocol you want to monitor [IS-IS, BGP]
+protocol : protocol # Protocol you want to monitor [isis, BGP]
 bw_thres : bandwidth # Interger value of Bandwidth in KB that you determine is the minmum value for the link
 jitter_thres : jitter_threshold # Interger value of Jitter Threshold
 pkt_loss : packet loss # Interger value of number of packets allowed to lose
@@ -85,6 +86,7 @@ The iPerf server must be running on another router or server (the router to whom
 Use following command to launch iPerf:
 
 ```iperf -s -B ip_address -u```
+
 *Replace ip_address with the destination ip address.
 
 Step 7: Run deamon.
