@@ -6,8 +6,6 @@ template that is used for flushing.
 """
 import logging
 import json
-import sys
-from ast import literal_eval
 
 LOGGER = logging.getLogger()
 
@@ -24,11 +22,12 @@ def flush(grpc_client, neighbor_as, drop_policy_name):
     # Get the BGP config.
     err, bgp_config = grpc_client.getconfig(bgp_config_template)
     if err:
-        err = literal_eval(err)
+        err = json.loads(err)
         message = err["cisco-grpc:errors"]["error"][0]["error-message"]
         LOGGER.error('There was a problem loading current config: %s', message)
         return None
     # Drill down to the neighbors to be flushed.
+    bgp_config = json.loads(bgp_config)
     neighbors = bgp_config['Cisco-IOS-XR-ipv4-bgp-cfg:bgp']['instance'][0]
     neighbors = neighbors['instance-as'][0]['four-byte-as'][0]['default-vrf']
     neighbors = neighbors['bgp-entity']['neighbors']['neighbor']
@@ -44,10 +43,14 @@ def flush(grpc_client, neighbor_as, drop_policy_name):
             removed_neighbors.append((neighbor['neighbor-address'], curr_policy))
     # flush the neighbors from the configuration
     LOGGER.info('Flushing the bgp neighbors...')
-    err, _ = grpc_client.mergeconfig(bgp_config_template)
-    if err:
-        err = literal_eval(err)
-        message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+    bgp_config = json.dumps(bgp_config)
+    response = grpc_client.mergeconfig(bgp_config)
+    if response.errors:
+        err = json.loads(response.errors)
+        try:
+            message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+        except TypeError:
+            message = err["cisco-grpc:errors"]["error"][0]["error-type"]
         LOGGER.error('There was a problem flushing BGP: %s', message)
         return None
     return json.dumps(removed_neighbors)
