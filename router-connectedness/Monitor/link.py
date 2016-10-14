@@ -3,11 +3,13 @@
 import subprocess
 import logging
 import sys
+import json
+from ast import literal_eval
 from grpc.framework.interfaces.face.face import AbortionError
 
 class Link(object):
     """A class for monitoring interfaces with iPerf.
-    :param server: The iPerf server ip address.
+    :param destination: The iPerf destination ip address.
     :param interface: The outgoing interface.
     :param grpc_client: gRPC Client object.
     :param bw_thres: The bandwidth threshold. Default to 400 KBits.
@@ -16,7 +18,7 @@ class Link(object):
     :param interval: The interval time in seconds between periodic bandwidth,
     jitter, and loss reports.
 
-    :type server: str
+    :type destination: str
     :type interface: sr
     :type grpc_client: gRPC Client object
     :type bw_thres: int
@@ -24,25 +26,24 @@ class Link(object):
     :type pkt_loss: int
     :type interval: int
     """
-    def __init__(self, server, interface, grpc_client, bw_thres=400, jitter_thres=10,
+    def __init__(self, destination, interface, grpc_client, bw_thres=400, jitter_thres=10,
                  pkt_loss=2, interval=10):
         self.bw_thres = bw_thres
         self.jitter_thres = jitter_thres
         self.pkt_loss = pkt_loss
         self.interval = interval
         self.interface = interface
-        self.server = server
+        self.destination = destination
         self.grpc_client = grpc_client
-
         self.logger = logging.getLogger()
 
     def __repr__(self):
-        return '{}(Server = {}, Interface = {}, gRPC_Client = {}, ' \
+        return '{}(destination = {}, Interface = {}, gRPC_Client = {}, ' \
                 'Bandwidth_Threshold = {}, Jitter_Threshold = {}, ' \
                 'Packet_Loss = {}, Interval = {}' \
                 ')'.format(
                     self.__class__.__name__,
-                    self.server,
+                    self.destination,
                     self.interface,
                     self.grpc_client,
                     self.bw_thres,
@@ -81,14 +82,14 @@ class Link(object):
         are issues on the link.
         """
         cmd = "iperf -c %s -B %s -t %d -i %d -u -y C" % \
-        (self.server, self.interface, self.interval, self.interval)
+        (self.destination, self.interface, self.interval, self.interval)
         # Perform the network monitoring task.
         process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         out, err = process.communicate()
         if err:
             if 'Connection refused' in err:
-                self.logger.critical('Connection to iPerf server refused. Assuming link is down.')
+                self.logger.critical('Connection to iPerf destination refused. Assuming link is down.')
             return True
         # Parse the output.
         transferred_bytes = float(out.splitlines()[2].split(',')[7])
@@ -127,17 +128,22 @@ class Link(object):
             path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
             version = 4
             ipv6 = ''
-            if ':' in self.interface: # Checks if it is an IPv6 link.
+            if ':' in self.destination: # Checks if it is an IPv6 link.
                 version = 6
                 ipv6 = 'ipv6-'
-            path = path.format(v=version, ipv6=ipv6, link=self.interface)
+            path = path.format(v=version, ipv6=ipv6, link=self.destination)
             try:
                 err, output = self.grpc_client.getoper(path)
                 if err:
-                    self.logger.warning('A gRPC error occurred: %s', err.message)
+                    err = json.loads(err)
+                    try:
+                        message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+                    except KeyError:
+                        message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
+                    self.logger.warning('A gRPC error occurred: %s', message)
                 return protocol not in output or '"active": true' not in output
             except AbortionError:
-                self.logger.critical('Unable to connect to local box, check your gRPC server.')
+                self.logger.critical('Unable to connect to local box, check your gRPC destination.')
                 sys.exit(1)
         else:
             self.logger.error("Invalid protocol type '%s'.", protocol)
