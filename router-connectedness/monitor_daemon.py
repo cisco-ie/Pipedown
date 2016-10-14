@@ -9,7 +9,7 @@ import ConfigParser
 import log
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
-from Flush.bgp_flush import Flush_BGP
+from Response import response
 
 LOGGER = log.log()
 
@@ -48,7 +48,6 @@ def monitor(section):
             #Flushing connection to Internet due to Data center link being faulty.
             LOGGER.warning('Link is down, triggering Flush.')
             #This is currently static, as we support more types will add to config file.
-            bgp_config_fn = 'Flush/get-neighborsq.json'
             try:
                 # Putting string of AS into a list
                 ext_as = flush_as.split()
@@ -57,10 +56,9 @@ def monitor(section):
                 LOGGER.error('Flush AS is in the wrong format for %s node', section)
                 sys.exit(1)
 
-            flush_bgp = Flush_BGP(client, ext_as, drop_policy_name, bgp_config_fn, LOGGER)
-            rm_neighbors = flush_bgp.get_bgp_neighbors()
+            rm_neighbors = response.flush(client, ext_as, drop_policy_name)
             rm_neighbors_string = str(rm_neighbors).strip('[]')
-            LOGGER.info('Removed neighbors and policy: %s', rm_neighbors_string)
+            LOGGER.info('Removed neighbors and policy: %s' % rm_neighbors_string)
             break
 
 def grab_sections():

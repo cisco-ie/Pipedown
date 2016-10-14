@@ -16,7 +16,6 @@ def cisco_flush(grpc_client, neighbor_as, drop_policy_name):
     :param drop_policy_name: Name of the policy file to be used when
                              dropping a neighbor.
     """
-    #This should support both v6 and v4, needs testing.
     bgp_config_template = '{"Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {"instance": [{"instance-name": "default","instance-as": [{"four-byte-as": [{"default-vrf": {"bgp-entity": {"neighbors": {"neighbor": [{"neighbor-afs": {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}'
     # Get the BGP config.
     err, bgp_config = grpc_client.getconfig(bgp_config_template)
