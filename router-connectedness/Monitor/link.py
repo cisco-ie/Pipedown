@@ -3,6 +3,7 @@
 import subprocess
 import logging
 import sys
+import json
 from ast import literal_eval
 from grpc.framework.interfaces.face.face import AbortionError
 
@@ -134,8 +135,11 @@ class Link(object):
             try:
                 err, output = self.grpc_client.getoper(path)
                 if err:
-                    err = literal_eval(err)
-                    message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+                    err = json.loads(err)
+                    try:
+                        message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+                    except KeyError:
+                        message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
                     self.logger.warning('A gRPC error occurred: %s', message)
                 return protocol not in output or '"active": true' not in output
             except AbortionError:

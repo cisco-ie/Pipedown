@@ -21,7 +21,10 @@ def cisco_flush(grpc_client, neighbor_as, drop_policy_name):
     err, bgp_config = grpc_client.getconfig(bgp_config_template)
     if err:
         err = json.loads(err)
-        message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+        try:
+            message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+        except KeyError:
+            message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
         LOGGER.error('There was a problem loading current config: %s', message)
         return None
     # Drill down to the neighbors to be flushed.
@@ -47,8 +50,8 @@ def cisco_flush(grpc_client, neighbor_as, drop_policy_name):
         err = json.loads(response.errors)
         try:
             message = err["cisco-grpc:errors"]["error"][0]["error-message"]
-        except TypeError:
-            message = err["cisco-grpc:errors"]["error"][0]["error-type"]
+        except KeyError:
+            message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
         LOGGER.error('There was a problem flushing BGP: %s', message)
         return None
     return json.dumps(removed_neighbors)

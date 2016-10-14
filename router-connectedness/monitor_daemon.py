@@ -56,7 +56,7 @@ def monitor(section):
                 LOGGER.error('Flush AS is in the wrong format for %s node', section)
                 sys.exit(1)
 
-            rm_neighbors = response.flush(client, ext_as, drop_policy_name)
+            rm_neighbors = response.cisco_flush(client, ext_as, drop_policy_name)
             rm_neighbors_string = str(rm_neighbors).strip('[]')
             LOGGER.info('Removed neighbors and policy: %s' % rm_neighbors_string)
             break
