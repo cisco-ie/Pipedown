@@ -4,8 +4,7 @@ configurations in IOS-XR.
 """
 import logging
 import json
-import smtplib
-from email.mime.text import MIMEText
+import requests
 
 LOGGER = logging.getLogger()
 
@@ -83,15 +82,13 @@ def yang_selection(model):
 def alert():
     """Alert the user (email or console) if there is an error.
     """
-    #Read the log into a message
-    log = open('router_connected.log', 'rb')
-    msg = MIMEText(log.read())
-    log.close()
-    #Create headers for email
-    msg['Subject'] = 'ALERT: Link is down'
-    msg['From'] = 'router@test.com'
-    msg['To'] = 'kkumara3@cisco.com'
-    #Start SMTP server to send email
-    server = smtplib.SMTP('localhost')
-    server.sendmail('router@test.com', 'kkumara3@cisco.com', msg.as_string())
-    server.quit()
+    url = 'http://api.tropo.com/1.0/sessions'
+    token = '416978636d5774754655457466614d6f6a4a4574464c4941584777475a7870496758446f5775474f65535176'
+    msg = 'Link is down, check router'
+    payload = {'token':token, 'msg':msg}
+    r = requests.post(url, data=json.dumps(payload))
+    if r.status_code != 200:
+       LOGGER.error(r.text)
+    else:
+       LOGGER.info('Success')
+    
