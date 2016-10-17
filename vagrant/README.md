@@ -32,9 +32,9 @@ Onetime config command:
 
 Step 5. In a terminal screen change directory into the repository.
 
-```cd vagrant```
+``` cd vagrant ```
 
-Step 6. ```vagrant up```
+Step 6. ``` vagrant up ```
 
 This is all you need to get Solenoid working! It will take a few minutes, and you will see a number of ugly looking messages like these:
 
@@ -69,38 +69,38 @@ After completing the initial ```vagrant up```, the container is already running 
 
 Here you will see the repository with a proper config. To run the application a simple.
 
-```python monitor_daemon.py```
+``` python monitor_daemon.py ```
 
 #### Impair the Link
 
 1. Jump into the bridge vagrant:
 
-```vagrant ssh bridge```
+   ```vagrant ssh bridge```  
 
 2. Run the start_impair script:
 
-```./start_impair.sh```
+   ``` ./start_impair.sh ```  
 
 
 #### Repair the Link
 
 1. Jump into the bridge vagrant:
 
-```vagrant ssh bridge```
+   ``` vagrant ssh bridge ```  
 
 2. Run the stop_impair script:
 
-```./stop_impair.sh```
+   ``` ./stop_impair.sh ```  
 
 #### Checking the CLI
 
 You can check if the application changed the policy in rtr2 cli.
 
-```vagrant port rtr2```
+``` vagrant port rtr2 ```
 
 All the port forwardign for rtr2 will be displayed, we want to use the one for 22.
 
-```ssh -p [port forwarding for 22] vagrant@localhost```
+``` ssh -p [port forwarding for 22] vagrant@localhost ```
 
 The password is vagrant
 
@@ -131,7 +131,7 @@ RP/0/RP0/CPU0:rtr2#
 If you need to check iPerf here are some helpful commands.
 
 Run iPerf Server on rtr1:
-```iperf -s -B 10.1.1.2 -u```
+``` iperf -s -B 10.1.1.2 -u ```
 
 
 Test iPerf client on rtr2:
