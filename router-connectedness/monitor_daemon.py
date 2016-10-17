@@ -13,7 +13,7 @@ from Response import response
 
 LOGGER = log.log()
 
-def monitor(section):
+def monitor(section, lock):
     #Read in Configuration for Daemon.
     config = ConfigParser.ConfigParser()
     try:
@@ -55,9 +55,10 @@ def monitor(section):
             except ValueError:
                 LOGGER.error('Flush AS is in the wrong format for %s node', section)
                 sys.exit(1)
-
+            lock.acquire()
             rm_neighbors = response.cisco_flush(client, ext_as, drop_policy_name)
             rm_neighbors_string = str(rm_neighbors).strip('[]')
+            lock.release()
             LOGGER.info('Removed neighbors and policy: %s' % rm_neighbors_string)
             break
 
@@ -75,8 +76,10 @@ def daemon():
     #Spawn process per a section header.
     sections = grab_sections()
     jobs = []
+    #Create lock object to ensure gRPC is only used once
+    lock = multiprocessing.Lock()
     for section in sections:
-        d = multiprocessing.Process(name=section, target=monitor, args=(section,))
+        d = multiprocessing.Process(name=section, target=monitor, args=(section, lock))
         jobs.append(d)
         d.start()
 
