@@ -58,6 +58,7 @@ def monitor(section, lock):
             lock.acquire()
             rm_neighbors = response.cisco_flush(client, ext_as, drop_policy_name)
             rm_neighbors_string = str(rm_neighbors).strip('[]')
+            response.alert()
             lock.release()
             LOGGER.info('Removed neighbors and policy: %s' % rm_neighbors_string)
             break

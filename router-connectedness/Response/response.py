@@ -4,6 +4,8 @@ configurations in IOS-XR.
 """
 import logging
 import json
+import smtplib
+from email.mime.text import MIMEText
 
 LOGGER = logging.getLogger()
 
@@ -70,7 +72,7 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
 def yang_selection(model):
     """Based on the model-type selected in the configuration file, call the
        correct function.
-       Will contain a switch statement of all the functions (cisco_flush, 
+       Will contain a switch statement of all the functions (cisco_flush,
        open_config_flush, etc.).
 
        If someone wants to add a response option, they will add the function
@@ -81,4 +83,15 @@ def yang_selection(model):
 def alert():
     """Alert the user (email or console) if there is an error.
     """
-    pass
+    #Read the log into a message
+    log = open('router_connected.log', 'rb')
+    msg = MIMEText(log.read())
+    log.close()
+    #Create headers for email
+    msg['Subject'] = 'ALERT: Link is down'
+    msg['From'] = 'router@test.com'
+    msg['To'] = 'kkumara3@cisco.com'
+    #Start SMTP server to send email
+    server = smtplib.SMTP('localhost')
+    server.sendmail('router@test.com', 'kkumara3@cisco.com', msg.as_string())
+    server.quit()
