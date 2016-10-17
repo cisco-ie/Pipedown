@@ -4,7 +4,7 @@
 ##### Author: Lisa Roach, Karthik Kumaravel, Quan Le
 ##### Contact: Please use the Issues page to ask questions or open bugs and feature requests.
 
-## Descrption
+## Description
 
 The end goal of the Router Connectedness application is to monitor a CDN router and ensures that it has a stable link to the data center, and if it does not, take it offline by removing its link to the internet.
 
