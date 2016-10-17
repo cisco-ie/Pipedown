@@ -19,7 +19,7 @@ Vagrant.configure(2) do |config|
         s.path =  "scripts/apply_config.sh"
         s.args = ["/home/vagrant/rtr_config1"]
       end
-      node.vm.provision "shell", inline: "nohup iperf -s -B 10.1.1.2 -u &"
+      node.vm.provision "shell", inline: "nohup iperf -s -B 6.6.6.6 -u &"
       node.vm.provision "shell", inline: "nohup iperf -s -B 5.5.5.5 -u &"
     end
 
