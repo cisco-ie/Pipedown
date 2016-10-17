@@ -1,0 +1,93 @@
+hostname rtr1
+!
+interface Loopback0
+ ipv4 address 10.1.1.2 255.255.255.255
+ ipv6 address 10:1:1::2/128
+!
+interface Loopback 2
+ ipv4 address 5.5.5.5 255.255.255.255
+ ipv6 address 5:5:5::5/128
+!
+interface Loopback 3
+ ipv4 address 6.6.6.6 255.255.255.255
+ ipv6 address 6:6:6::6/128
+!
+interface GigabitEthernet0/0/0/0
+ descript to pop router
+ ipv4 address 12.1.1.20 255.255.255.0
+ ipv6 address 12:1:1::20/120
+ no shut
+!
+segment-routing global-block 100000 164999
+!
+router isis 1
+ is-type level-2-only
+ net 49.0001.0000.0000.0002.00
+ address-family ipv4 unicast
+  metric-style wide
+  segment-routing mpls
+ !
+ address-family ipv6 unicast
+  metric-style wide
+  segment-routing mpls
+ !
+ interface Loopback0
+  passive
+  address-family ipv4 unicast
+   prefix-sid index 2
+  !
+  address-family ipv6 unicast
+   prefix-sid index 1002
+  !
+ !
+  interface Loopback2
+  passive
+  address-family ipv4 unicast
+   prefix-sid index 2
+  !
+  address-family ipv6 unicast
+   prefix-sid index 1002
+  !
+ !
+ interface GigabitEthernet0/0/0/0
+  point-to-point
+  address-family ipv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+ !
+router bgp 1
+ bgp router-id 10.1.1.2
+ address-family ipv4 unicast
+ network 10.1.1.2/32
+ network 6.6.6.6/32
+ !
+ address-family ipv6 unicast
+ network 10:1:1::2/128
+ network 6:6:6::6/128
+ !
+ neighbor 10.1.1.1
+ description iBGP to Pop router
+ remote-as 1
+ update-source loopback0
+  address-family ipv4 unicast
+   next-hop-self
+  !
+  address-family ipv6 uni
+   next-hop-self
+  !
+ !
+!
+grpc
+ port 57777
+!
+telemetry model-driven
+ sensor-group 1
+  sensor-path Cisco-IOS-XR-procmem-oper
+  sensor-path Cisco-IOS-XR-wdsysmon-fd-oper:system-monitoring
+ !
+ subscription 1
+  sensor-group-id 1 sample-interval 5000
+ !
+!
+end
