@@ -81,7 +81,6 @@ def cisco_flush(grpc_client, neighbor_as, drop_policy_name):
         LOGGER.error('There was a problem flushing BGP: %s', message)
         return None
     rm_neighbors = json.dumps(removed_neighbors)
-    rm_neighbors_string = str(rm_neighbors).strip('[]')
     return 'Removed neighbors and policy: %s' % rm_neighbors_string
 
 def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
@@ -122,7 +121,6 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
             ipvs = neighbor['afi-safis']['afi-safi']
             for ipv in ipvs:
                 curr_policy = ipv['apply-policy']['config']['export-policy']
-                curr_policy = str(json.dumps(curr_policy)).strip('[]')
                 ipv['apply-policy']['config']['export-policy'] = drop_policy_name
                 ip_type = ipv['afi-safi-name']
                 # Add the removed neighbors to list.
@@ -139,8 +137,7 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
         LOGGER.error('There was a problem flushing BGP: %s', message)
         return None
     rm_neighbors = json.dumps(removed_neighbors)
-    rm_neighbors_string = str(rm_neighbors).strip('[]')
-    return 'Removed neighbors and policy: %s' % rm_neighbors_string
+    return 'Removed neighbors and policy: %s' % rm_neighbors
 
 def alert(client, model, arg):
     """Alert the user (email or console) if there is an error.
