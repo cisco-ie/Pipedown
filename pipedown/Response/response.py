@@ -79,7 +79,44 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
     :param drop_policy_name: Name of the policy file to be used when
                              dropping a neighbor.
     """
-    pass
+    bgp_config_template = '{"openconfig-bgp:bgp": {"neighbors":[null]}}'
+    # Get the BGP config.
+    err, bgp_config = grpc_client.getconfig(bgp_config_template)
+    if err:
+        err = json.loads(err)
+        try:
+            message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+        except KeyError:
+            message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
+        LOGGER.error('There was a problem loading current config: %s', message)
+        return None
+    # Drill down to the neighbors to be flushed.
+    bgp_config = json.loads(bgp_config)
+    removed_neighbors = []
+    neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
+    for neighbor in neighbors:
+        as_val = neighbor['config']['peer-as']
+        if as_val in neighbor_as:
+            # Change the policy to drop.
+            ipvs = neighbor['afi-safis']['afi-safi']
+            for ipv in ipvs:
+                curr_policy = ipv['apply-policy']['config']['export-policy']
+                ipv['apply-policy']['config']['export-policy'] = drop_policy_name
+                ip_type = ipv['afi-safi-name']
+                # Add the removed neighbors to list.
+                removed_neighbors.append((neighbor['neighbor-address'], ip_type, curr_policy))
+    LOGGER.info('Flushing the bgp neighbors...')
+    bgp_config = json.dumps(bgp_config)
+    response = grpc_client.mergeconfig(bgp_config)
+    if response.errors:
+        err = json.loads(response.errors)
+        try:
+            message = err["cisco-grpc:errors"]["error"][0]["error-message"]
+        except KeyError:
+            message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
+        LOGGER.error('There was a problem flushing BGP: %s', message)
+        return None
+    return json.dumps(removed_neighbors)
 
 def yang_selection(model):
     """Based on the model-type selected in the configuration file, call the
