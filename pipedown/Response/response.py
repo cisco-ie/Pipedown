@@ -19,6 +19,7 @@ configurations in IOS-XR.
 import logging
 import sys
 import json
+from collections import OrderedDict
 import requests
 import smtplib
 from email.mime.text import MIMEText
@@ -111,7 +112,7 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
         LOGGER.error('There was a problem loading current config: %s', message)
         return None
     # Drill down to the neighbors to be flushed.
-    bgp_config = json.loads(bgp_config)
+    bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
     removed_neighbors = []
     neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
     for neighbor in neighbors:
