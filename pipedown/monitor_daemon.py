@@ -1,3 +1,17 @@
+# Copyright 2016 Cisco Systems All rights reserved.
+#
+# The contents of this file are licensed under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with the
+# License. You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
 """
 Daemon to monitor a link to Data Center using iPerf. If the link is faulty
 deemed by the thresholds set,then the policy on the link to the Internet
@@ -29,6 +43,7 @@ def monitor(section, lock):
         grpc_port = config.getint(section, 'grpc_port')
         grpc_user = config.get(section, 'grpc_user')
         grpc_pass = config.get(section, 'grpc_pass')
+        model = config.get(section, 'model')
         flush_as = config.get(section, 'flush_as')
         drop_policy_name = config.get(section, 'drop_policy_name')
     except (ConfigParser.Error, ValueError), e:
@@ -56,14 +71,9 @@ def monitor(section, lock):
                 LOGGER.error('Flush AS is in the wrong format for %s node', section)
                 sys.exit(1)
             lock.acquire()
-            rm_neighbors = response.cisco_flush(client, ext_as, drop_policy_name)
-            rm_neighbors_string = str(rm_neighbors).strip('[]')
-            token = '416978636d5774754655457466614d6f6a4a4574464c4941584777475a7870496758446f5775474f65535176'
-            phone_number = '+14084997722'
-            model = 'email'
-            response.alert(model, phone_number, token)
+            rm_neighbors = response.cisco_flush(model, client, ext_as, drop_policy_name)
             lock.release()
-            LOGGER.info('Removed neighbors and policy: %s' % rm_neighbors_string)
+            LOGGER.info('Removed neighbors and policy: %s' % rm_neighbors)
             break
 
 def grab_sections():

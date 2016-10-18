@@ -1,12 +1,12 @@
-# Router-Connectedness
+# Pipedown
 ### Router Connectedness Application
 
 ##### Author: Lisa Roach, Karthik Kumaravel, Quan Le
 ##### Contact: Please use the Issues page to ask questions or open bugs and feature requests.
 
-## Descrption
+## Description
 
-The end goal of the Router Connectedness application is to monitor a CDN router and ensures that it has a stable link to the data center, and if it does not, take it offline by removing its link to the internet.
+The end goal of the Pipedown is to monitor a CDN router and ensures that it has a stable link to the data center, and if it does not, take it offline by removing its link to the internet.
 
 The application solves the end goal by checking a link that connects back to the data center and ensure that it is healthy. The link is determined to be healthy using [iPerf](https://iperf.fr/) based on parameters such as jitter, bandwidth, packet loss, and dropped packets. If the link is determined to be unhealthy, then the link connecting to the internet would be flushed using [gRPC](http://www.grpc.io/) based on a user defined AS and policy.
 
@@ -16,7 +16,7 @@ Currently for monitoring multiple links, each link needs to have its own source 
 
 ### Vagrant
 
-For an easy Router-Connectedness-in-a-box demonstration, please refer to the [vagrant](https://bitbucket.org/innovationedge/vagrant) directory. Here you will be able to download a fully functional vagrant environment that has Router-Connectedness up and running already.
+For an easy Pipedown-in-a-box demonstration, please refer to the [vagrant](https://github.com/cisco-ie/Pipedown/tree/master/vagrant) directory. Here you will be able to download a fully functional vagrant environment that has Router-Connectedness up and running already.
 
 ## Usage
 
