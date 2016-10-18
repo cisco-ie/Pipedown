@@ -122,7 +122,7 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
             ipvs = neighbor['afi-safis']['afi-safi']
             for ipv in ipvs:
                 curr_policy = ipv['apply-policy']['config']['export-policy']
-                curr_policy = str(curr_policy).strip('[]')
+                curr_policy = str(json.dumps(curr_policy)).strip('[]')
                 ipv['apply-policy']['config']['export-policy'] = drop_policy_name
                 ip_type = ipv['afi-safi-name']
                 # Add the removed neighbors to list.
