@@ -81,24 +81,29 @@ def yang_selection(model):
     """
     pass
 
-def alert(phone_number, token):
+def alert(model, arg1, arg2):
     """Alert the user (email or console) if there is an error.
     """
-    url = 'http://api.tropo.com/1.0/sessions'
     message = 'Link is down, check router'
-    payload = {'token':token, 'msg':message, 'phone_number':phone_number}
-    r = requests.post(url, data=json.dumps(payload))
-    if r.status_code != 200:
-       LOGGER.error(r.text)
-    else:
-       LOGGER.info('Successfuly sent Text Message')
-
-    m_from = 'remcampb@cisco.com'
-    m_to = 'kkumara3@cisco.com'
-    msg = MIMEText(message)
-    msg['Subject'] = 'Router Down'
-    msg['From'] = m_from
-    msg['To'] = m_to
-    s = smtplib.SMTP('outbound.cisco.com')
-    s.sendmail(m_from, [m_to], msg.as_string())
-    s.quit()
+    if model == 'text':
+        phone_number = arg1
+        token = arg2
+        url = 'http://api.tropo.com/1.0/sessions'
+        payload = {'token':token, 'msg':message, 'phone_number':phone_number}
+        req = requests.post(url, data=json.dumps(payload))
+        if req.status_code != 200:
+           LOGGER.error(req.text)
+        else:
+           LOGGER.info('Successfuly sent Text Message')
+    elif model == 'email':
+        m_from = arg1
+        m_to = arg2
+        log = open('router_connected.log', 'rb')
+        msg = MIMEText(log.read())
+        log.close()
+        msg['Subject'] = 'Router Down'
+        msg['From'] = m_from
+        msg['To'] = m_to
+        send = smtplib.SMTP('outbound.cisco.com')
+        send.sendmail(m_from, [m_to], msg.as_string())
+        send.quit()
