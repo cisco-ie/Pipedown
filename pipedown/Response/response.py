@@ -183,4 +183,4 @@ def model_selection(model, client, arg1, arg2):
         'open_config_flush': open_config_flush,
         'alert' : alert,
     }
-    functions[model](client, arg1, arg2)
+    return functions[model](client, arg1, arg2)
