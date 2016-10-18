@@ -1,10 +1,10 @@
-# Router-Connectedness-Vagrant
-##### Vagrant for Router-Connectedness App
+# Pipedown-Vagrant
+##### Vagrant for Pipedown
 ##### Author: Karthik Kumaravel & Lisa Roach
 ##### Contact: Please use the issues page to ask questions or open bugs and feature requests.
 
 ### Overview
-This environment is intended to act as a testbed for playing with the router-connectedness app. This Vagrant uses two IOS-XRv images, two virtual box VMs, and an Ubuntu/trusty64 container on one of the IOS-XRv images. The plumbing and demo functions are brought up through bash scripts to allow you to use the Router-Connectedness application without hassle, and demo it to others.
+This environment is intended to act as a testbed for playing with Pipedown. This Vagrant uses two IOS-XRv images, two virtual box VMs, and an Ubuntu/trusty64 container on one of the IOS-XRv images. The plumbing and demo functions are brought up through bash scripts to allow you to use the Router-Connectedness application without hassle, and demo it to others.
 
 ![Router Diagram](Router-Connectedness.png)
 
@@ -36,7 +36,7 @@ Step 5. In a terminal screen change directory into the repository.
 
 Step 6. ``` vagrant up ```
 
-This is all you need to get Solenoid working! It will take a few minutes, and you will see a number of ugly looking messages like these:
+This is all you need to get Pipedown working! It will take a few minutes, and you will see a number of ugly looking messages like these:
 
 ```
 ==> xrv: tar: dev/audio2: Cannot mknod: Operation not permitted
@@ -75,22 +75,22 @@ Here you will see the repository with a proper config. To run the application a 
 
 1. Jump into the bridge vagrant:
 
-   ```vagrant ssh bridge```  
+   ```vagrant ssh bridge```
 
 2. Run the start_impair script:
 
-   ``` ./start_impair.sh ```  
+   ``` ./start_impair.sh ```
 
 
 #### Repair the Link
 
 1. Jump into the bridge vagrant:
 
-   ``` vagrant ssh bridge ```  
+   ``` vagrant ssh bridge ```
 
 2. Run the stop_impair script:
 
-   ``` ./stop_impair.sh ```  
+   ``` ./stop_impair.sh ```
 
 #### Checking the CLI
 
