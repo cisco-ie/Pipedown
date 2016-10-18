@@ -44,8 +44,8 @@ def monitor(section, lock):
         grpc_user = config.get(section, 'grpc_user')
         grpc_pass = config.get(section, 'grpc_pass')
         model = config.get(section, 'model')
-        flush_as = config.get(section, 'flush_as')
-        drop_policy_name = config.get(section, 'drop_policy_name')
+        arg1 = config.get(section, 'arg1')
+        arg2 = config.get(section, 'arg2')
     except (ConfigParser.Error, ValueError), e:
         LOGGER.error('Config file error: %s', e)
         sys.exit(1)
@@ -63,17 +63,10 @@ def monitor(section, lock):
             #Flushing connection to Internet due to Data center link being faulty.
             LOGGER.warning('Link is down, triggering Flush.')
             #This is currently static, as we support more types will add to config file.
-            try:
-                # Putting string of AS into a list
-                ext_as = flush_as.split()
-                ext_as = map(int, ext_as)
-            except ValueError:
-                LOGGER.error('Flush AS is in the wrong format for %s node', section)
-                sys.exit(1)
             lock.acquire()
-            rm_neighbors = response.cisco_flush(model, client, ext_as, drop_policy_name)
+            reply = response.model_selection(model, client, arg1, arg2)
             lock.release()
-            LOGGER.info('Removed neighbors and policy: %s' % rm_neighbors)
+            LOGGER.info(reply)
             break
 
 def grab_sections():

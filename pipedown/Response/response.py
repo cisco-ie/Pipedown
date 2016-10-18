@@ -17,6 +17,7 @@ Removes all BGP neighbors of a given external AS using GRPC to send and commit
 configurations in IOS-XR.
 """
 import logging
+import sys
 import json
 import requests
 import smtplib
@@ -33,6 +34,13 @@ def cisco_flush(grpc_client, neighbor_as, drop_policy_name):
     :param drop_policy_name: Name of the policy file to be used when
                              dropping a neighbor.
     """
+    try:
+        # Putting string of AS into a list
+        neighbor_as = neighbor_as.split()
+        neighbor_as = map(int, neighbor_as)
+    except ValueError:
+        LOGGER.error('Flush AS is in the wrong format')
+        sys.exit(1)
     bgp_config_template = '{"Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {"instance": [{"instance-name": "default","instance-as": [{"four-byte-as": [{"default-vrf": {"bgp-entity": {"neighbors": {"neighbor": [{"neighbor-afs": {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}'
     # Get the BGP config.
     err, bgp_config = grpc_client.getconfig(bgp_config_template)
@@ -73,7 +81,7 @@ def cisco_flush(grpc_client, neighbor_as, drop_policy_name):
         return None
     rm_neighbors = json.dumps(removed_neighbors)
     rm_neighbors_string = str(rm_neighbors).strip('[]')
-    return rm_neighbors_string
+    return 'Removed neighbors and policy: %s' % rm_neighbors_string
 
 def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
@@ -84,6 +92,13 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
     :param drop_policy_name: Name of the policy file to be used when
                              dropping a neighbor.
     """
+    try:
+        # Putting string of AS into a list
+        neighbor_as = neighbor_as.split()
+        neighbor_as = map(int, neighbor_as)
+    except ValueError:
+        LOGGER.error('Flush AS is in the wrong format')
+        sys.exit(1)
     bgp_config_template = '{"openconfig-bgp:bgp": {"neighbors":[null]}}'
     # Get the BGP config.
     err, bgp_config = grpc_client.getconfig(bgp_config_template)
@@ -123,9 +138,38 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
         return None
     rm_neighbors = json.dumps(removed_neighbors)
     rm_neighbors_string = str(rm_neighbors).strip('[]')
-    return rm_neighbors_string
+    return 'Removed neighbors and policy: %s' % rm_neighbors_string
 
-def yang_selection(model, client, arg1, arg2):
+def alert(client, model, arg):
+    """Alert the user (email or console) if there is an error.
+    """
+    message = 'Link is down, check router'
+    if model == 'text':
+        phone_number = arg
+        token = '416978636d5774754655457466614d6f6a4a4574464c4941584777475a7870496758446f5775474f65535176'
+        url = 'http://api.tropo.com/1.0/sessions'
+        payload = {'token':token, 'msg':message, 'phone_number':phone_number}
+        req = requests.post(url, data=json.dumps(payload))
+        if req.status_code != 200:
+           LOGGER.error(req.text)
+           return
+        else:
+           return 'Successfuly sent Text Message'
+    elif model == 'email':
+        m_from = 'kkumara3@cisco.com'
+        m_to = arg
+        log = open('router_connected.log', 'rb')
+        msg = MIMEText(log.read())
+        log.close()
+        msg['Subject'] = message
+        msg['From'] = m_from
+        msg['To'] = m_to
+        send = smtplib.SMTP('outbound.cisco.com')
+        send.sendmail(m_from, [m_to], msg.as_string())
+        send.quit()
+        return 'Successfuly sent Email'
+
+def model_selection(model, client, arg1, arg2):
     """Based on the model-type selected in the configuration file, call the
        correct function.
        Will contain a switch statement of all the functions (cisco_flush,
@@ -137,32 +181,6 @@ def yang_selection(model, client, arg1, arg2):
     functions = {
         'cisco_flush': cisco_flush,
         'open_config_flush': open_config_flush,
+        'alert' : alert,
     }
     functions[model](client, arg1, arg2)
-
-def alert(model, arg1, arg2):
-    """Alert the user (email or console) if there is an error.
-    """
-    message = 'Link is down, check router'
-    if model == 'text':
-        phone_number = arg1
-        token = arg2
-        url = 'http://api.tropo.com/1.0/sessions'
-        payload = {'token':token, 'msg':message, 'phone_number':phone_number}
-        req = requests.post(url, data=json.dumps(payload))
-        if req.status_code != 200:
-           LOGGER.error(req.text)
-        else:
-           LOGGER.info('Successfuly sent Text Message')
-    elif model == 'email':
-        m_from = arg1
-        m_to = arg2
-        log = open('router_connected.log', 'rb')
-        msg = MIMEText(log.read())
-        log.close()
-        msg['Subject'] = message
-        msg['From'] = m_from
-        msg['To'] = m_to
-        send = smtplib.SMTP('outbound.cisco.com')
-        send.sendmail(m_from, [m_to], msg.as_string())
-        send.quit()
