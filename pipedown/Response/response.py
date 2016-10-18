@@ -68,7 +68,9 @@ def cisco_flush(grpc_client, neighbor_as, drop_policy_name):
             message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
         LOGGER.error('There was a problem flushing BGP: %s', message)
         return None
-    return json.dumps(removed_neighbors)
+    rm_neighbors = json.dumps(removed_neighbors)
+    rm_neighbors_string = str(rm_neighbors).strip('[]')
+    return rm_neighbors_string
 
 def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
@@ -116,9 +118,11 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
             message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
         LOGGER.error('There was a problem flushing BGP: %s', message)
         return None
-    return json.dumps(removed_neighbors)
+    rm_neighbors = json.dumps(removed_neighbors)
+    rm_neighbors_string = str(rm_neighbors).strip('[]')
+    return rm_neighbors_string
 
-def yang_selection(model):
+def yang_selection(model, client, arg1, arg2):
     """Based on the model-type selected in the configuration file, call the
        correct function.
        Will contain a switch statement of all the functions (cisco_flush,
@@ -127,7 +131,11 @@ def yang_selection(model):
        If someone wants to add a response option, they will add the function
        to this module and add to the switch statement here.
     """
-    pass
+    functions = {
+        'cisco_flush': cisco_flush,
+        'open_config_flush': open_config_flush,
+    }
+    functions[model](client, arg1, arg2)
 
 def alert():
     """Alert the user (email or console) if there is an error.

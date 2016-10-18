@@ -43,6 +43,7 @@ def monitor(section, lock):
         grpc_port = config.getint(section, 'grpc_port')
         grpc_user = config.get(section, 'grpc_user')
         grpc_pass = config.get(section, 'grpc_pass')
+        model = config.get(section, 'model')
         flush_as = config.get(section, 'flush_as')
         drop_policy_name = config.get(section, 'drop_policy_name')
     except (ConfigParser.Error, ValueError), e:
@@ -70,10 +71,9 @@ def monitor(section, lock):
                 LOGGER.error('Flush AS is in the wrong format for %s node', section)
                 sys.exit(1)
             lock.acquire()
-            rm_neighbors = response.cisco_flush(client, ext_as, drop_policy_name)
-            rm_neighbors_string = str(rm_neighbors).strip('[]')
+            rm_neighbors = response.cisco_flush(model, client, ext_as, drop_policy_name)
             lock.release()
-            LOGGER.info('Removed neighbors and policy: %s' % rm_neighbors_string)
+            LOGGER.info('Removed neighbors and policy: %s' % rm_neighbors)
             break
 
 def grab_sections():
