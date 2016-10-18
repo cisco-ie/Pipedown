@@ -101,7 +101,7 @@ def alert(model, arg1, arg2):
         log = open('router_connected.log', 'rb')
         msg = MIMEText(log.read())
         log.close()
-        msg['Subject'] = 'Router Down'
+        msg['Subject'] = message
         msg['From'] = m_from
         msg['To'] = m_to
         send = smtplib.SMTP('outbound.cisco.com')
