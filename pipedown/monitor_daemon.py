@@ -27,7 +27,7 @@ from Response import response
 
 LOGGER = log.log()
 
-def monitor(section, lock):
+def monitor(section, lock, health):
     #Read in Configuration for Daemon.
     config = ConfigParser.ConfigParser()
     try:
@@ -53,7 +53,6 @@ def monitor(section, lock):
             flush_as = config.get('DEFAULT', 'flush_as')
             drop_policy_name = config.get('DEFAULT', 'drop_policy_name')
             pass_policy_name = config.get('DEFAULT', 'pass_policy_name')
-
     except (ConfigParser.Error, ValueError), e:
         LOGGER.error('Config file error: %s', e)
         sys.exit(1)
@@ -83,19 +82,20 @@ def monitor(section, lock):
                 break
         else:
             #Flushing connection to Internet due to Data center link being faulty.
-            LOGGER.warning('Link is down, triggering Flush.')
+            LOGGER.warning('Link %s is down.', section)
+            reply = 'Link is back up, but no action has been taken'
             #This is currently static, as we support more types will add to config file.
             lock.acquire()
-            if flush:
-                reply = response.model_selection(yang, client, flush_as, drop_policy_name)
-                LOGGER.info(reply)
-                flushed = True
-            else:
-                reply = 'Link is back up, but no action has been taken'
+            if all(value is True for value in health.value()):
+                if flush:
+                    reply = response.model_selection(yang, client, flush_as, drop_policy_name)
+                    LOGGER.info(reply)
+                    flushed = True
+                    health[section]
             if alert:
                 response.alert(alert_type, alert_address, reply)
                 alert = False
-                lock.release()
+            lock.release()
             break
 
 def grab_sections():
@@ -112,10 +112,15 @@ def daemon():
     #Spawn process per a section header.
     sections = grab_sections()
     jobs = []
+    #Creating a multiprocessing dictionary
+    manager = multiprocessing.Manager()
+    health = manager.dict()
+    for section in sections:
+        health[section] = False
     #Create lock object to ensure gRPC is only used once
     lock = multiprocessing.Lock()
     for section in sections:
-        d = multiprocessing.Process(name=section, target=monitor, args=(section, lock))
+        d = multiprocessing.Process(name=section, target=monitor, args=(section, lock, health))
         jobs.append(d)
         d.start()
 
