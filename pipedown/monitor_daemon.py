@@ -52,6 +52,7 @@ def monitor(section, lock):
 
     #Set up a gRPC client.
     client = CiscoGRPCClient(grpc_server, grpc_port, 10, grpc_user, grpc_pass)
+    flushed = False
     while True:
         #Checking link to data center.
         LOGGER.info('Checking link health of %s', source)
@@ -59,6 +60,15 @@ def monitor(section, lock):
         result = link.health(protocol)
         if result is False:
             LOGGER.info('Link is good.')
+            if flushed:
+                LOGGER.warning('Link is back up, adding neighbor.')
+                #This is currently static, as we support more types will add to config file.
+                lock.acquire()
+                reply = response.model_selection(model, client, arg1, arg2)
+                lock.release()
+                LOGGER.info(reply)
+                flushed = False
+                break
         else:
             #Flushing connection to Internet due to Data center link being faulty.
             LOGGER.warning('Link is down, triggering Flush.')
@@ -67,6 +77,7 @@ def monitor(section, lock):
             reply = response.model_selection(model, client, arg1, arg2)
             lock.release()
             LOGGER.info(reply)
+            flushed = True
             break
 
 def grab_sections():

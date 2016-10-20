@@ -23,17 +23,21 @@ from collections import OrderedDict
 import requests
 import smtplib
 from email.mime.text import MIMEText
+from grpc.framework.interfaces.face.face import AbortionError
+
+from Tools.exceptions import GRPCError
 
 LOGGER = logging.getLogger()
 
-def cisco_flush(grpc_client, neighbor_as, drop_policy_name):
-    """Flush_BGP object that will initiate the GRPC client to perform the
+
+def cisco_update_connection(grpc_client, neighbor_as, new_policy_name):
+    """Initiate the GRPC client to perform the
    neighbor removal and commits, using Cisco YANG models.
 
     :param grpc_client: the initiated GRPC client.
     :param neighbor_as: List of neighbor AS numbers.
-    :param drop_policy_name: Name of the policy file to be used when
-                             dropping a neighbor.
+    :param new_policy_name: Name of the policy file to be used when
+                             updating a neighbor.
     """
     try:
         # Putting string of AS into a list
@@ -44,53 +48,33 @@ def cisco_flush(grpc_client, neighbor_as, drop_policy_name):
         sys.exit(1)
     bgp_config_template = '{"Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {"instance": [{"instance-name": "default","instance-as": [{"four-byte-as": [{"default-vrf": {"bgp-entity": {"neighbors": {"neighbor": [{"neighbor-afs": {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}'
     # Get the BGP config.
-    err, bgp_config = grpc_client.getconfig(bgp_config_template)
-    if err:
-        err = json.loads(err)
-        try:
-            message = err["cisco-grpc:errors"]["error"][0]["error-message"]
-        except KeyError:
-            message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
-        LOGGER.error('There was a problem loading current config: %s', message)
-        return None
-    # Drill down to the neighbors to be flushed.
+    bgp_config = get_bgp_config(grpc_client, bgp_config_template)
+    # Drill down to the neighbors to be flushed or added.
     bgp_config = json.loads(bgp_config)
     neighbors = bgp_config['Cisco-IOS-XR-ipv4-bgp-cfg:bgp']['instance'][0]
     neighbors = neighbors['instance-as'][0]['four-byte-as'][0]['default-vrf']
     neighbors = neighbors['bgp-entity']['neighbors']['neighbor']
 
-    removed_neighbors = []
+    updated_neighbors = []
     for neighbor in neighbors:
         as_val = neighbor['remote-as']['as-yy']
         if as_val in neighbor_as:
-            # Change the policy to drop.
+            # Change the policy to drop or pass.
             curr_policy = neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out']
-            neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = drop_policy_name
-            # Add the removed neighbors to list.
-            removed_neighbors.append((neighbor['neighbor-address'], curr_policy))
-    # flush the neighbors from the configuration
-    LOGGER.info('Flushing the bgp neighbors...')
-    bgp_config = json.dumps(bgp_config)
-    response = grpc_client.mergeconfig(bgp_config)
-    if response.errors:
-        err = json.loads(response.errors)
-        try:
-            message = err["cisco-grpc:errors"]["error"][0]["error-message"]
-        except KeyError:
-            message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
-        LOGGER.error('There was a problem flushing BGP: %s', message)
-        return None
-    rm_neighbors = json.dumps(removed_neighbors)
-    return 'Removed neighbors and policy: %s' % rm_neighbors_string
+            neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = new_policy_name
+            # Add the removed or added neighbors to list.
+            updated_neighbors.append((neighbor['neighbor-address'], curr_policy))
+    updated_neighbors = json.dumps(updated_neighbors)
+    return 'Updated neighbors and policy: %s' % updated_neighbors
 
-def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
+def open_config_flush(grpc_client, neighbor_as, new_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
    neighbor removal and commits, using Cisco YANG models.
 
     :param grpc_client: the initiated GRPC client.
     :param neighbor_as: List of neighbor AS numbers.
-    :param drop_policy_name: Name of the policy file to be used when
-                             dropping a neighbor.
+    :param new_policy_name: Name of the policy file to be used when
+                             updating a neighbor.
     """
     try:
         # Putting string of AS into a list
@@ -101,18 +85,10 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
         sys.exit(1)
     bgp_config_template = '{"openconfig-bgp:bgp": {"neighbors":[null]}}'
     # Get the BGP config.
-    err, bgp_config = grpc_client.getconfig(bgp_config_template)
-    if err:
-        err = json.loads(err)
-        try:
-            message = err["cisco-grpc:errors"]["error"][0]["error-message"]
-        except KeyError:
-            message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
-        LOGGER.error('There was a problem loading current config: %s', message)
-        return None
+    bgp_config = get_bgp_config(grpc_client, bgp_config_template)
     # Drill down to the neighbors to be flushed.
     bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
-    removed_neighbors = []
+    updated_neighbors = []
     neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
     for neighbor in neighbors:
         as_val = neighbor['config']['peer-as']
@@ -121,25 +97,48 @@ def open_config_flush(grpc_client, neighbor_as, drop_policy_name):
             ipvs = neighbor['afi-safis']['afi-safi']
             for ipv in ipvs:
                 curr_policy = ipv['apply-policy']['config']['export-policy']
-                ipv['apply-policy']['config']['export-policy'] = drop_policy_name
+                ipv['apply-policy']['config']['export-policy'] = new_policy_name
                 ip_type = ipv['afi-safi-name']
                 # Add the removed neighbors to list.
-                removed_neighbors.append((neighbor['neighbor-address'], ip_type, curr_policy))
-    LOGGER.info('Flushing the bgp neighbors...')
-    bgp_config = json.dumps(bgp_config)
-    response = grpc_client.mergeconfig(bgp_config)
-    if response.errors:
-        err = json.loads(response.errors)
-        try:
-            message = err["cisco-grpc:errors"]["error"][0]["error-message"]
-        except KeyError:
-            message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
-        LOGGER.error('There was a problem flushing BGP: %s', message)
-        return None
-    rm_neighbors = json.dumps(removed_neighbors)
-    return 'Removed neighbors and policy: %s' % rm_neighbors
+                updated_neighbors.append((neighbor['neighbor-address'], ip_type, curr_policy))
+    updated_neighbors = json.dumps(updated_neighbors)
+    return 'Updated neighbors and policy: %s' % updated_neighbors
 
-def alert(client, model, arg):
+def get_bgp_config(grpc_client, bgp_config_template):
+    """Use gRPC to grab the current BGP configuration on the box."""
+    try:
+        err, bgp_config = grpc_client.getconfig(bgp_config_template)
+        if err:
+            raise GRPCError(err)
+        return bgp_config
+    except GRPCError as e:
+        LOGGER.error(e.message)
+        return None
+    except AbortionError:
+        LOGGER.critical(
+            'Unable to connect to local box, check your gRPC destination.'
+            )
+        return None
+
+def apply_policy(grpc_client, bgp_config):
+    """Apply the new BGP policy by using gRPC."""
+    LOGGER.info('Changing the bgp neighbors...')
+    bgp_config = json.dumps(bgp_config)
+    try:
+        response = grpc_client.mergeconfig(bgp_config)
+        if response.errors:
+            err = json.loads(response.errors)
+            raise GRPCError(err)
+    except GRPCError as e:
+        LOGGER.error(e.message)
+        return None
+    except AbortionError:
+        LOGGER.critical(
+            'Unable to connect to local box, check your gRPC destination.'
+            )
+        return None
+
+def alert(model, arg):
     """Alert the user (email or console) if there is an error.
     """
     message = 'Link is down, check router'
@@ -153,7 +152,7 @@ def alert(client, model, arg):
            LOGGER.error(req.text)
            return
         else:
-           return 'Successfuly sent Text Message'
+           return 'Successfully sent Text Message'
     elif model == 'email':
         m_from = 'kkumara3@cisco.com'
         m_to = arg
@@ -166,7 +165,7 @@ def alert(client, model, arg):
         send = smtplib.SMTP('outbound.cisco.com')
         send.sendmail(m_from, [m_to], msg.as_string())
         send.quit()
-        return 'Successfuly sent Email'
+        return 'Successfully sent Email'
 
 def model_selection(model, client, arg1, arg2):
     """Based on the model-type selected in the configuration file, call the
@@ -178,7 +177,7 @@ def model_selection(model, client, arg1, arg2):
        to this module and add to the switch statement here.
     """
     functions = {
-        'cisco_flush': cisco_flush,
+        'cisco_flush': cisco_update_connection,
         'open_config_flush': open_config_flush,
         'alert' : alert,
     }
