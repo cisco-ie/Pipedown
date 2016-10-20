@@ -18,4 +18,4 @@ class ProtocolError(Exception):
         self.protocol = protocol
         self.message = "Invalid protocol type '%s'.", protocol
 
-class ConnectionError(AbortionError):
+#class ConnectionError(AbortionError):
