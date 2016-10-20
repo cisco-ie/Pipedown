@@ -48,18 +48,22 @@ def monitor(section, lock):
     except (ConfigParser.Error, ValueError), e:
         LOGGER.error('Config file error: %s', e)
         sys.exit(1)
-    try:
-        if alert:
+    if alert:
+        try:
             alert_type = config.get('DEFAULT', 'alert_type')
             alert_address = config.get('DEFAULT', 'alert_address')
-        elif flush:
+        except (ConfigParser.Error, ValueError), e:
+            LOGGER.error('Config file error: %s', e)
+            sys.exit(1)
+    elif flush:
+        try:
             yang = config.get('DEFAULT', 'yang')
             flush_as = config.get('DEFAULT', 'flush_as')
             drop_policy_name = config.get('DEFAULT', 'drop_policy_name')
             pass_policy_name = config.get('DEFAULT', 'pass_policy_name')
-    except (ConfigParser.Error, ValueError), e:
-        LOGGER.error('Config file error: %s', e)
-        sys.exit(1)
+        except (ConfigParser.Error, ValueError), e:
+            LOGGER.error('Config file error: %s', e)
+            sys.exit(1)
 
     #Set up a gRPC client.
     client = CiscoGRPCClient(grpc_server, grpc_port, 10, grpc_user, grpc_pass)
