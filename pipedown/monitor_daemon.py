@@ -45,15 +45,18 @@ def monitor(section, lock):
         grpc_pass = config.get('DEFAULT', 'grpc_pass')
         alert = config.getboolean('DEFAULT', 'alert')
         flush = config.getboolean('DEFAULT', 'flush')
-        yang = config.get('DEFAULT', 'yang')
-        if alert is True:
+    except (ConfigParser.Error, ValueError), e:
+        LOGGER.error('Config file error: %s', e)
+        sys.exit(1)
+    try:
+        if alert:
             alert_type = config.get('DEFAULT', 'alert_type')
             alert_address = config.get('DEFAULT', 'alert_address')
-        elif flush is True:
+        elif flush:
+            yang = config.get('DEFAULT', 'yang')
             flush_as = config.get('DEFAULT', 'flush_as')
             drop_policy_name = config.get('DEFAULT', 'drop_policy_name')
             pass_policy_name = config.get('DEFAULT', 'pass_policy_name')
-
     except (ConfigParser.Error, ValueError), e:
         LOGGER.error('Config file error: %s', e)
         sys.exit(1)
