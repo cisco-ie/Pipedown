@@ -47,18 +47,18 @@ Step 5: Create a monitor.config file in the router-connectedness directory and f
 
 ```
 [Name-for-connection]
-destination : ip_address # IP address of where iPerf is running in the data center
-source : ip_address # IP address of your souce link
-protocol : protocol # Protocol you want to monitor [isis, BGP]
-bw_thres : bandwidth # Interger value of Bandwidth in KB that you determine is the minmum value for the link
-jitter_thres : jitter_threshold # Interger value of Jitter Threshold
-pkt_loss : packet loss # Interger value of number of packets allowed to lose
-interval : interval # Interger value in seconds of how often you want the test to run
-grpc_server : ip_address # IP address of the router you are monitoring (Can be local loopback 127.0.0.1)
-grpc_port : port # gRPC port number
-grpc_user : username # Username for AAA authentication
-grpc_pass : password # Password for AAA authentication
-flush_as : flush_as # The AS number of the neighbor group for the internet
+destination : ip_address          # IP address of where iPerf is running in the data center
+source : ip_address               # IP address of your souce link
+protocol : protocol               # Protocol you want to monitor [isis, BGP]
+bw_thres : bandwidth              # Integer value of Bandwidth in KB that you determine is the minmum value for the link
+jitter_thres : jitter_threshold   # Integer value of Jitter Threshold
+pkt_loss : packet loss            # Integer value of number of packets allowed to lose
+interval : interval               # Integer value in seconds of how often you want the test to run
+grpc_server : ip_address          # IP address of the router you are monitoring (Can be local loopback 127.0.0.1)
+grpc_port : port                  # gRPC port number
+grpc_user : username              # Username for AAA authentication
+grpc_pass : password              # Password for AAA authentication
+flush_as : flush_as               # The AS number of the neighbor group for the internet
 drop_policy_name: drop_policy_name # The policy name that you want when the flush is activated.
 ```
 Example:
