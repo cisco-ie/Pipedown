@@ -19,7 +19,7 @@ import logging
 import sys
 from grpc.framework.interfaces.face.face import AbortionError
 
-from Tools.exceptions import GRPCError, ProtocolError
+from pipedown.Tools.exceptions import GRPCError, ProtocolError
 
 class Link(object):
     """A class for monitoring interfaces with iPerf.
@@ -40,7 +40,6 @@ class Link(object):
     :type pkt_loss: int
     :type interval: int
     """
-    #maybe I should use kwargs and args here instead?
     def __init__(self, destination, interface, grpc_client, bw_thres=400, jitter_thres=10,
                  pkt_loss=2, interval=10):
         self.bw_thres = bw_thres
@@ -74,6 +73,16 @@ class Link(object):
 
         :param protocol: The given protocol.
         :type protocol: str
+
+        >>> _check_protocol('isis')
+        True
+        >>> _check_protocol('')
+        False
+        >>> _check_protocol(9)
+        False
+        >>> _check_protocol('bpg')
+        False
+
         """
         protocols = [
             'ISIS',
@@ -138,12 +147,14 @@ class Link(object):
         :type protocol: str
         """
         try:
-            # If the protocol is wrong, exit the program.
+            # If the protocol is wrong, return False.
+            # This prevents an accidental flush bc of a human error.
             if not self._check_protocol(protocol):
                 raise ProtocolError(protocol)
         except ProtocolError as e:
             self.logger.error(e.message)
-            sys.exit(1)
+            raise
+            return False
 
         path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
         version = 4
@@ -160,8 +171,11 @@ class Link(object):
             return protocol not in output or '"active": true' not in output
         except GRPCError as e:
             self.logger.error(e.message)
+            raise
         except AbortionError:
-            self.logger.critical('Unable to connect to local box, check your gRPC destination.')
+            self.logger.critical(
+                'Unable to connect to local box, check your gRPC destination.'
+                )
             sys.exit(1)
 
     def health(self, protocol):

@@ -1,8 +1,8 @@
 import unittest
 import os
 from mock import patch, Mock
-from Monitor.link import Link
-from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
+from pipedown.Monitor.link import Link
+from pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
 class LinkTestCase(unittest.TestCase, object):
     @staticmethod
@@ -13,7 +13,7 @@ class LinkTestCase(unittest.TestCase, object):
             return f.read()
 
     @classmethod
-    @patch('Monitor.link.logging.getLogger')
+    @patch('pipedown.Monitor.link.logging.getLogger')
     def setUpClass(cls, mock_logging):
         cls.grpc_client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'test', 'test')
         cls.link = Link('10.1.1.1', '10.1.1.2', cls.grpc_client)
@@ -26,7 +26,7 @@ class LinkTestCase(unittest.TestCase, object):
         self.assertEqual(lnk.pkt_loss, 5)
         self.assertEqual(lnk.interval, 5)
 
-    @patch('Monitor.link.subprocess.Popen.communicate')
+    @patch('pipedown.Monitor.link.subprocess.Popen.communicate')
     def test_iperf(self, mock_communicate):
         err = 'read failed: Connection refused\n'
         mock_communicate.return_value = ['', err]
@@ -41,8 +41,8 @@ class LinkTestCase(unittest.TestCase, object):
         mock_communicate.return_value = [out, '']
         self.assertTrue(self.link.run_iperf())
 
-    @patch('Monitor.link.Link.check_routing')
-    @patch('Monitor.link.Link.run_iperf')
+    @patch('pipedown.Monitor.link.Link.check_routing')
+    @patch('pipedown.Monitor.link.Link.run_iperf')
     def test_health(self, mock_iperf, mock_routing):
         protocol = 'ISIS'
         #Problem with the link.
@@ -65,22 +65,40 @@ class LinkTestCase(unittest.TestCase, object):
         self.assertTrue(self.link._check_protocol('bgp'))
         self.assertTrue(self.link._check_protocol('isis'))
 
-    @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
+    @patch('pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
     def test_check_routing(self, mock_get):
-        with self.assertRaises(SystemExit):
-            self.link.check_routing('bad')
+        from pipedown.Tools.exceptions import ProtocolError
+        with self.assertRaises(ProtocolError):
+            result = self.link.check_routing('bad')
             mock_get.assert_not_called()
-        err = ''
+            self.assertFalse(result)
+
         output_good = self.read_file('Examples/protocol-active.txt')
-        mock_get.return_value = err, output_good
+        mock_get.return_value = '', output_good
         self.assertFalse(self.link.check_routing('isis'))
         self.assertTrue(self.link.check_routing('bgp'))
 
         output_bad = self.read_file('Examples/bad-protocol.txt')
-        mock_get.return_value = err, output_bad
+        mock_get.return_value = '', output_bad
         self.assertTrue(self.link.check_routing('isis'))
 
-        err = Mock(message='error')
         output_bad = self.read_file('Examples/non-active.txt')
-        mock_get.return_value = err, output_bad
+        mock_get.return_value = '', output_bad
         self.assertTrue(self.link.check_routing('isis'))
+
+        err = Mock(message='error string')
+        mock_get.return_value = err, output_bad
+
+        from pipedown.Tools.exceptions import GRPCError
+        with self.assertRaises(GRPCError):
+            self.link.check_routing('isis')
+
+        err = Mock(message='{"cisco-grpc:errors": {"error": [{"error-type": "protocol","error-tag": "unknown-element","error-severity": "error","error-path": "Cisco-IOS-XR-ip-rib-ipv4-oper:ns1:rib/ns1:vrf"}]}}')
+        with self.assertRaises(GRPCError):
+            mock_get.return_value = err, output_bad
+            self.link.check_routing('isis')
+
+        err = Mock(message='{"cisco-grpc:errors": {"error": [{"error-type": "application","error-tag": "operation-failed","error-severity": "error","error-message": "The instance name is used already: asn 0.1 inst-name default"}]}}')
+        with self.assertRaises(GRPCError):
+            mock_get.return_value = err, output_bad
+            self.link.check_routing('isis')

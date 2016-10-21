@@ -50,22 +50,25 @@ def cisco_update_connection(grpc_client, neighbor_as, new_policy_name):
     # Get the BGP config.
     bgp_config = get_bgp_config(grpc_client, bgp_config_template)
     # Drill down to the neighbors to be flushed or added.
-    bgp_config = json.loads(bgp_config)
-    neighbors = bgp_config['Cisco-IOS-XR-ipv4-bgp-cfg:bgp']['instance'][0]
-    neighbors = neighbors['instance-as'][0]['four-byte-as'][0]['default-vrf']
-    neighbors = neighbors['bgp-entity']['neighbors']['neighbor']
+    if bgp_config:
+        bgp_config = json.loads(bgp_config)
+        neighbors = bgp_config['Cisco-IOS-XR-ipv4-bgp-cfg:bgp']['instance'][0]
+        neighbors = neighbors['instance-as'][0]['four-byte-as'][0]['default-vrf']
+        neighbors = neighbors['bgp-entity']['neighbors']['neighbor']
 
-    updated_neighbors = []
-    for neighbor in neighbors:
-        as_val = neighbor['remote-as']['as-yy']
-        if as_val in neighbor_as:
-            # Change the policy to drop or pass.
-            curr_policy = neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out']
-            neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = new_policy_name
-            # Add the removed or added neighbors to list.
-            updated_neighbors.append((neighbor['neighbor-address'], curr_policy))
-    updated_neighbors = json.dumps(updated_neighbors)
-    return 'Updated neighbors and policy: %s' % updated_neighbors
+        updated_neighbors = []
+        for neighbor in neighbors:
+            as_val = neighbor['remote-as']['as-yy']
+            if as_val in neighbor_as:
+                # Change the policy to drop or pass.
+                curr_policy = neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out']
+                neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = new_policy_name
+                # Add the removed or added neighbors to list.
+                updated_neighbors.append((neighbor['neighbor-address'], curr_policy))
+        updated_neighbors = json.dumps(updated_neighbors)
+        return 'Updated neighbors and policy: %s' % updated_neighbors
+    else:
+        return 'No neighbors updated due to GRPC Error.'
 
 def open_config_flush(grpc_client, neighbor_as, new_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
@@ -87,22 +90,25 @@ def open_config_flush(grpc_client, neighbor_as, new_policy_name):
     # Get the BGP config.
     bgp_config = get_bgp_config(grpc_client, bgp_config_template)
     # Drill down to the neighbors to be flushed.
-    bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
-    updated_neighbors = []
-    neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
-    for neighbor in neighbors:
-        as_val = neighbor['config']['peer-as']
-        if as_val in neighbor_as:
-            # Change the policy to drop.
-            ipvs = neighbor['afi-safis']['afi-safi']
-            for ipv in ipvs:
-                curr_policy = ipv['apply-policy']['config']['export-policy']
-                ipv['apply-policy']['config']['export-policy'] = new_policy_name
-                ip_type = ipv['afi-safi-name']
-                # Add the removed neighbors to list.
-                updated_neighbors.append((neighbor['neighbor-address'], ip_type, curr_policy))
-    updated_neighbors = json.dumps(updated_neighbors)
-    return 'Updated neighbors and policy: %s' % updated_neighbors
+    if bgp_config:
+        bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
+        updated_neighbors = []
+        neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
+        for neighbor in neighbors:
+            as_val = neighbor['config']['peer-as']
+            if as_val in neighbor_as:
+                # Change the policy to drop.
+                ipvs = neighbor['afi-safis']['afi-safi']
+                for ipv in ipvs:
+                    curr_policy = ipv['apply-policy']['config']['export-policy']
+                    ipv['apply-policy']['config']['export-policy'] = new_policy_name
+                    ip_type = ipv['afi-safi-name']
+                    # Add the removed neighbors to list.
+                    updated_neighbors.append((neighbor['neighbor-address'], ip_type, curr_policy))
+        updated_neighbors = json.dumps(updated_neighbors)
+        return 'Updated neighbors and policy: %s' % updated_neighbors
+    else:
+        return 'No neighbors updated due to GRPC Error.'
 
 def get_bgp_config(grpc_client, bgp_config_template):
     """Use gRPC to grab the current BGP configuration on the box."""

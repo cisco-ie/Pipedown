@@ -4,12 +4,16 @@ import json
 class GRPCError(Exception):
     """Raised when there is an error returned by the GRPC Client."""
     def __init__(self, err):
-        self.err = json.loads(err)
-        message = self.err['cisco-grpc:errors']['error'][0]
-        if 'error-message' in self.err:
-            self.message = 'A gRPC error occurred: %s', message['error-message']
-        elif 'error-tag' in self.err:
-            self.message = 'A gRPC error occurred: %s', message['error-tag']
+        self.err = err
+        try:
+            self.err = json.loads(err)
+            message = self.err['cisco-grpc:errors']['error'][0]
+            if 'error-message' in self.err:
+                self.message = 'A gRPC error occurred: %s', message['error-message']
+            elif 'error-tag' in self.err:
+                self.message = 'A gRPC error occurred: %s', message['error-tag']
+        except TypeError:  #err is a str instead of a JSON object
+            self.message = err
 
 class ProtocolError(Exception):
     """Raised when an invalid protocol is submitted."""
