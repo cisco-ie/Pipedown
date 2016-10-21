@@ -100,9 +100,9 @@ class Link(object):
                 'LOCAL',
             ]
             if not protocol.upper() in protocols:
-                raise ProtocolError
+                raise ProtocolError(protocol)
         else:
-            raise ProtocolError
+            raise ProtocolError(protocol)
 
     def run_iperf(self):
         """Run iPerf to check the health of the link.
