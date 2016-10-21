@@ -1,0 +1,121 @@
+hostname rtr2
+!
+tpa
+ address-family ipv4
+  update-source GigabitEthernet0/0/0/2
+ !
+!
+interface Loopback0
+ ipv4 address 10.1.1.1 255.255.255.255
+ ipv6 address 10:1:1::1/128
+!
+interface Loopback1
+ ipv4 address 10.1.1.5 255.255.255.255
+!
+
+interface GigabitEthernet0/0/0/0
+ descript to DC router
+ ipv4 address 12.1.1.10 255.255.255.0
+ ipv6 address 12:1:1::10/120
+ no shut
+!
+
+interface GigabitEthernet0/0/0/1
+ descript to devbox
+ ipv4 address 11.1.1.10 255.255.255.0
+ ipv6 address 11:1:1::10/120
+ no shut
+!
+interface GigabitEthernet0/0/0/2
+ descript to Internet
+ ipv4 address 13.0.2.10 255.255.255.0
+ no shut
+!
+route-policy pass
+  pass
+end-policy
+!
+route-policy drop
+  drop
+end-policy
+!
+router static
+ address-family ipv4 unicast
+  no 0.0.0.0/0 MgmtEth0/RP0/CPU0/0 10.0.2.2
+  0.0.0.0/0 13.0.2.1
+ !
+!
+segment-routing global-block 100000 164999
+!
+router isis 1
+ is-type level-2-only
+ net 49.0001.0000.0000.0001.00
+ address-family ipv4 unicast
+  metric-style wide
+  segment-routing mpls
+ !
+ address-family ipv6 unicast
+  metric-style wide
+  segment-routing mpls
+ !
+ interface Loopback0
+  passive
+  address-family ipv4 unicast
+   prefix-sid index 1
+  !
+  address-family ipv6 unicast
+   prefix-sid index 1001
+  !
+ !
+ interface GigabitEthernet0/0/0/0
+  point-to-point
+  address-family ipv4 unicast
+  !
+  address-family ipv6 unicast
+  !
+ !
+router bgp 1
+ bgp router-id 10.1.1.1
+ address-family ipv4 unicast
+ network 10.1.1.1/32
+ network 11.1.1.0/24
+ network 13.0.2.0/24
+ !
+ address-family ipv6 unicast
+ network 10:1:1::1/128
+ !
+ neighbor 10.1.1.2
+  remote-as 1
+  update-source loopback0
+  address-family ipv4 unicast
+   next-hop-self
+  !
+  address-family ipv6 uni
+   next-hop-self
+!
+ neighbor 11.1.1.20
+ description eBGP to devbox
+ remote-as 65000
+ address-family ipv4 unicast
+  route-policy pass in
+  route-policy pass out
+ !
+ address-family ipv6 unicast
+  route-policy pass in
+  route-policy pass out
+  !
+ !
+!
+grpc
+ port 57777
+!
+telemetry model-driven
+ sensor-group 1
+  sensor-path Cisco-IOS-XR-procmem-oper
+  sensor-path Cisco-IOS-XR-wdsysmon-fd-oper:system-monitoring
+ !
+ subscription 1
+  sensor-group-id 1 sample-interval 5000
+ !
+!
+end

@@ -91,3 +91,6 @@ ENV/
 .ropeproject
 
 .DS_STORE
+
+# README builder local
+*.html
