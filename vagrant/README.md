@@ -65,7 +65,7 @@ All commands below originate from the vagrant folder.
 
 After completing the initial ```vagrant up```, the container is already running with the application. If you navigate to
 
-```ssh - p 58822 ubuntu@localhost```
+```ssh -p 58822 ubuntu@localhost```
 
 Here you will see the repository with a proper config. To run the application a simple.
 
