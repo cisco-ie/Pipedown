@@ -27,7 +27,7 @@ from Response import response
 
 LOGGER = log.log()
 
-def monitor(section, lock):
+def monitor(section, lock, health):
     #Read in Configuration for Daemon.
     config = ConfigParser.ConfigParser()
     try:
@@ -39,13 +39,20 @@ def monitor(section, lock):
         jitter_thres = config.getint(section, 'jitter_thres')
         pkt_loss = config.getint(section, 'pkt_loss')
         interval = config.getint(section, 'interval')
-        grpc_server = config.get(section, 'grpc_server')
-        grpc_port = config.getint(section, 'grpc_port')
-        grpc_user = config.get(section, 'grpc_user')
-        grpc_pass = config.get(section, 'grpc_pass')
-        model = config.get(section, 'model')
-        arg1 = config.get(section, 'arg1')
-        arg2 = config.get(section, 'arg2')
+        grpc_server = config.get('DEFAULT', 'grpc_server')
+        grpc_port = config.getint('DEFAULT', 'grpc_port')
+        grpc_user = config.get('DEFAULT', 'grpc_user')
+        grpc_pass = config.get('DEFAULT', 'grpc_pass')
+        alert = config.getboolean('DEFAULT', 'alert')
+        flush = config.getboolean('DEFAULT', 'flush')
+        if alert:
+            alert_type = config.get('DEFAULT', 'alert_type')
+            alert_address = config.get('DEFAULT', 'alert_address')
+        if flush:
+            yang = config.get('DEFAULT', 'yang')
+            flush_as = config.get('DEFAULT', 'flush_as')
+            drop_policy_name = config.get('DEFAULT', 'drop_policy_name')
+            pass_policy_name = config.get('DEFAULT', 'pass_policy_name')
     except (ConfigParser.Error, ValueError), e:
         LOGGER.error('Config file error: %s', e)
         sys.exit(1)
@@ -64,20 +71,31 @@ def monitor(section, lock):
                 LOGGER.warning('Link is back up, adding neighbor.')
                 #This is currently static, as we support more types will add to config file.
                 lock.acquire()
-                reply = response.model_selection(model, client, arg1, arg2)
+                if flush:
+                    reply = response.model_selection(yang, client, flush_as, pass_policy_name)
+                    LOGGER.info(reply)
+                else:
+                    reply = 'Link is back up, but no action has been taken'
+                    LOGGER.info(reply)
                 lock.release()
-                LOGGER.info(reply)
                 flushed = False
                 break
         else:
             #Flushing connection to Internet due to Data center link being faulty.
-            LOGGER.warning('Link is down, triggering Flush.')
+            LOGGER.warning('Link %s is down.', section)
+            reply = 'Link is back up, but no action has been taken'
             #This is currently static, as we support more types will add to config file.
             lock.acquire()
-            reply = response.model_selection(model, client, arg1, arg2)
+            if all(value is True for value in health.value()):
+                if flush:
+                    reply = response.model_selection(yang, client, flush_as, drop_policy_name)
+                    LOGGER.info(reply)
+                    flushed = True
+                    health[section]
+            if alert:
+                response.alert(alert_type, alert_address, reply)
+                alert = False
             lock.release()
-            LOGGER.info(reply)
-            flushed = True
             break
 
 def grab_sections():
@@ -94,10 +112,15 @@ def daemon():
     #Spawn process per a section header.
     sections = grab_sections()
     jobs = []
+    #Creating a multiprocessing dictionary
+    manager = multiprocessing.Manager()
+    health = manager.dict()
+    for section in sections:
+        health[section] = False
     #Create lock object to ensure gRPC is only used once
     lock = multiprocessing.Lock()
     for section in sections:
-        d = multiprocessing.Process(name=section, target=monitor, args=(section, lock))
+        d = multiprocessing.Process(name=section, target=monitor, args=(section, lock, health))
         jobs.append(d)
         d.start()
 

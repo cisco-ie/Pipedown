@@ -138,10 +138,10 @@ def apply_policy(grpc_client, bgp_config):
             )
         return None
 
-def alert(model, arg):
+def alert(model, arg, reply):
     """Alert the user (email or console) if there is an error.
     """
-    message = 'Link is down, check router'
+    message = 'Link is down, check router. ' + reply
     if model == 'text':
         phone_number = arg
         token = '416978636d5774754655457466614d6f6a4a4574464c4941584777475a7870496758446f5775474f65535176'
@@ -177,8 +177,7 @@ def model_selection(model, client, arg1, arg2):
        to this module and add to the switch statement here.
     """
     functions = {
-        'cisco_flush': cisco_update_connection,
-        'open_config_flush': open_config_flush,
-        'alert' : alert,
+        'cisco': cisco_update_connection,
+        'openconfig': open_config_flush,
     }
     return functions[model](client, arg1, arg2)

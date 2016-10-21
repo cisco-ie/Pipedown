@@ -16,3 +16,4 @@ class ProtocolError(Exception):
     def __init__(self, protocol):
         self.protocol = protocol
         self.message = "Invalid protocol type '%s'.", protocol
+
