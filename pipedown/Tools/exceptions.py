@@ -1,6 +1,5 @@
 """Custom exceptions for Pipedown."""
 import json
-from grpc.framework.interfaces.face.face import AbortionError
 
 class GRPCError(Exception):
     """Raised when there is an error returned by the GRPC Client."""
@@ -17,5 +16,3 @@ class ProtocolError(Exception):
     def __init__(self, protocol):
         self.protocol = protocol
         self.message = "Invalid protocol type '%s'.", protocol
-
-class ConnectionError(AbortionError):
