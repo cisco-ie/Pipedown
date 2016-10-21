@@ -19,13 +19,13 @@ configurations in IOS-XR.
 import logging
 import sys
 import json
-from collections import OrderedDict
-import requests
 import smtplib
+from collections import OrderedDict
 from email.mime.text import MIMEText
+import requests
 from grpc.framework.interfaces.face.face import AbortionError
 
-from Tools.exceptions import GRPCError
+from pipedown.Tools.exceptions import GRPCError
 
 LOGGER = logging.getLogger()
 
@@ -155,10 +155,10 @@ def alert(model, arg, reply):
         payload = {'token':token, 'msg':message, 'phone_number':phone_number}
         req = requests.post(url, data=json.dumps(payload))
         if req.status_code != 200:
-           LOGGER.error(req.text)
-           return
+            LOGGER.error(req.text)
+            return
         else:
-           return 'Successfully sent Text Message'
+            return 'Successfully sent Text Message'
     elif model == 'email':
         m_from = 'kkumara3@cisco.com'
         m_to = arg
