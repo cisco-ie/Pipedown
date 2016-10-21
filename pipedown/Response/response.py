@@ -17,7 +17,6 @@ Removes all BGP neighbors of a given external AS using GRPC to send and commit
 configurations in IOS-XR.
 """
 import logging
-import sys
 import json
 import smtplib
 from collections import OrderedDict
@@ -39,36 +38,34 @@ def cisco_update_connection(grpc_client, neighbor_as, new_policy_name):
     :param new_policy_name: Name of the policy file to be used when
                              updating a neighbor.
     """
-    try:
-        # Putting string of AS into a list
-        neighbor_as = neighbor_as.split()
-        neighbor_as = map(int, neighbor_as)
-    except ValueError:
-        LOGGER.error('Flush AS is in the wrong format')
-        sys.exit(1)
     bgp_config_template = '{"Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {"instance": [{"instance-name": "default","instance-as": [{"four-byte-as": [{"default-vrf": {"bgp-entity": {"neighbors": {"neighbor": [{"neighbor-afs": {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}'
     # Get the BGP config.
-    bgp_config = get_bgp_config(grpc_client, bgp_config_template)
+    try:
+        bgp_config = get_bgp_config(grpc_client, bgp_config_template)
+    except (GRPCError, AbortionError):
+        return 'No neighbors updated due to GRPC Get Error.'
     # Drill down to the neighbors to be flushed or added.
-    if bgp_config:
-        bgp_config = json.loads(bgp_config)
-        neighbors = bgp_config['Cisco-IOS-XR-ipv4-bgp-cfg:bgp']['instance'][0]
-        neighbors = neighbors['instance-as'][0]['four-byte-as'][0]['default-vrf']
-        neighbors = neighbors['bgp-entity']['neighbors']['neighbor']
+    bgp_config = json.loads(bgp_config)
+    neighbors = bgp_config['Cisco-IOS-XR-ipv4-bgp-cfg:bgp']['instance'][0]
+    neighbors = neighbors['instance-as'][0]['four-byte-as'][0]['default-vrf']
+    neighbors = neighbors['bgp-entity']['neighbors']['neighbor']
 
-        updated_neighbors = []
-        for neighbor in neighbors:
-            as_val = neighbor['remote-as']['as-yy']
-            if as_val in neighbor_as:
-                # Change the policy to drop or pass.
-                curr_policy = neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out']
-                neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = new_policy_name
-                # Add the removed or added neighbors to list.
-                updated_neighbors.append((neighbor['neighbor-address'], curr_policy))
-        updated_neighbors = json.dumps(updated_neighbors)
-        return 'Updated neighbors and policy: %s' % updated_neighbors
-    else:
-        return 'No neighbors updated due to GRPC Error.'
+    updated_neighbors = []
+    for neighbor in neighbors:
+        as_val = neighbor['remote-as']['as-yy']
+        if as_val in neighbor_as:
+            # Change the policy to drop or pass.
+            curr_policy = neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out']
+            neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = new_policy_name
+            # Add the removed or added neighbors to list.
+            updated_neighbors.append((neighbor['neighbor-address'], curr_policy))
+    try:
+        apply_policy(grpc_client, bgp_config)
+    except (GRPCError, AbortionError):
+        return 'No neighbors updated due to GRPC Merge Error.'
+    updated_neighbors = json.dumps(updated_neighbors)
+    return 'Updated neighbors and policy: %s' % updated_neighbors
+
 
 def open_config_flush(grpc_client, neighbor_as, new_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
@@ -79,36 +76,34 @@ def open_config_flush(grpc_client, neighbor_as, new_policy_name):
     :param new_policy_name: Name of the policy file to be used when
                              updating a neighbor.
     """
-    try:
-        # Putting string of AS into a list
-        neighbor_as = neighbor_as.split()
-        neighbor_as = map(int, neighbor_as)
-    except ValueError:
-        LOGGER.error('Flush AS is in the wrong format')
-        sys.exit(1)
     bgp_config_template = '{"openconfig-bgp:bgp": {"neighbors":[null]}}'
     # Get the BGP config.
-    bgp_config = get_bgp_config(grpc_client, bgp_config_template)
+    try:
+        bgp_config = get_bgp_config(grpc_client, bgp_config_template)
+    except (GRPCError, AbortionError):
+        return 'No neighbors updated due to GRPC Get Error.'
     # Drill down to the neighbors to be flushed.
-    if bgp_config:
-        bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
-        updated_neighbors = []
-        neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
-        for neighbor in neighbors:
-            as_val = neighbor['config']['peer-as']
-            if as_val in neighbor_as:
-                # Change the policy to drop.
-                ipvs = neighbor['afi-safis']['afi-safi']
-                for ipv in ipvs:
-                    curr_policy = ipv['apply-policy']['config']['export-policy']
-                    ipv['apply-policy']['config']['export-policy'] = new_policy_name
-                    ip_type = ipv['afi-safi-name']
-                    # Add the removed neighbors to list.
-                    updated_neighbors.append((neighbor['neighbor-address'], ip_type, curr_policy))
-        updated_neighbors = json.dumps(updated_neighbors)
-        return 'Updated neighbors and policy: %s' % updated_neighbors
-    else:
-        return 'No neighbors updated due to GRPC Error.'
+    bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
+    updated_neighbors = []
+    neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
+    for neighbor in neighbors:
+        as_val = neighbor['config']['peer-as']
+        if as_val in neighbor_as:
+            # Change the policy to drop.
+            ipvs = neighbor['afi-safis']['afi-safi']
+            for ipv in ipvs:
+                curr_policy = ipv['apply-policy']['config']['export-policy']
+                ipv['apply-policy']['config']['export-policy'] = new_policy_name
+                ip_type = ipv['afi-safi-name']
+                # Add the removed neighbors to list.
+                updated_neighbors.append((neighbor['neighbor-address'], ip_type, curr_policy))
+    try:
+        apply_policy(grpc_client, bgp_config)
+    except (GRPCError, AbortionError):
+        return 'No neighbors updated due to GRPC Merge Error.'
+    updated_neighbors = json.dumps(updated_neighbors)
+    return 'Updated neighbors and policy: %s' % updated_neighbors
+
 
 def get_bgp_config(grpc_client, bgp_config_template):
     """Use gRPC to grab the current BGP configuration on the box."""
@@ -119,12 +114,12 @@ def get_bgp_config(grpc_client, bgp_config_template):
         return bgp_config
     except GRPCError as e:
         LOGGER.error(e.message)
-        return None
+        raise
     except AbortionError:
         LOGGER.critical(
             'Unable to connect to local box, check your gRPC destination.'
             )
-        return None
+        raise
 
 def apply_policy(grpc_client, bgp_config):
     """Apply the new BGP policy by using gRPC."""
@@ -137,12 +132,12 @@ def apply_policy(grpc_client, bgp_config):
             raise GRPCError(err)
     except GRPCError as e:
         LOGGER.error(e.message)
-        return None
+        raise
     except AbortionError:
         LOGGER.critical(
             'Unable to connect to local box, check your gRPC destination.'
             )
-        return None
+        raise
 
 def alert(model, arg, reply):
     """Alert the user (email or console) if there is an error.

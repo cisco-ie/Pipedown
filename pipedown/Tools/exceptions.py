@@ -33,5 +33,8 @@ class ProtocolError(Exception):
     """Raised when an invalid protocol is submitted."""
     def __init__(self, protocol):
         self.protocol = protocol
-        self.message = "Invalid protocol type '%s'.", protocol
+        if isinstance(self.protocol, str):
+            self.message = "Invalid protocol type '%s'.", protocol
+        else:
+            self.message = 'Protocol must be of type string.'
 

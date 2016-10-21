@@ -20,10 +20,10 @@ is changed to stop peering with external routers.
 import multiprocessing
 import sys
 import ConfigParser
-import log
-from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
-from Monitor.link import Link
-from Response import response
+import pipedown.log as log
+from pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
+from pipedown.Monitor.link import Link
+from pipedown.Response import response
 
 LOGGER = log.log()
 
@@ -50,7 +50,11 @@ def monitor(section, lock, health):
             alert_address = config.get('DEFAULT', 'alert_address')
         if flush:
             yang = config.get('DEFAULT', 'yang')
-            flush_as = config.get('DEFAULT', 'flush_as')
+            try:
+                bgp_as = int(config.get('DEFAULT', 'bgp_as'))
+            except ValueError:
+                LOGGER.error('BGP AS must be an integer.')
+                sys.exit(1)
             drop_policy_name = config.get('DEFAULT', 'drop_policy_name')
             pass_policy_name = config.get('DEFAULT', 'pass_policy_name')
     except (ConfigParser.Error, ValueError), e:
@@ -72,7 +76,7 @@ def monitor(section, lock, health):
                 #This is currently static, as we support more types will add to config file.
                 lock.acquire()
                 if flush:
-                    reply = response.model_selection(yang, client, flush_as, pass_policy_name)
+                    reply = response.model_selection(yang, client, bgp_as, pass_policy_name)
                     LOGGER.info(reply)
                 else:
                     reply = 'Link is back up, but no action has been taken'
@@ -88,7 +92,7 @@ def monitor(section, lock, health):
             health[section] = result
             if all(health.values()):
                 if flush:
-                    reply = response.model_selection(yang, client, flush_as, drop_policy_name)
+                    reply = response.model_selection(yang, client, bgp_as, drop_policy_name)
                     LOGGER.info(reply)
                     flushed = True
             else:

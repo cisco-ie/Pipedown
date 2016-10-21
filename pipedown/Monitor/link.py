@@ -68,8 +68,8 @@ class Link(object):
 
     @staticmethod
     def _check_protocol(protocol):
-        """Ensure the protocol entered is valid, return True if valid and
-        False if invalid.
+        """Ensure the protocol entered is valid. Raise ProtocolError
+        if invalid.
 
         :param protocol: The given protocol.
         :type protocol: str
@@ -84,21 +84,25 @@ class Link(object):
         False
 
         """
-        protocols = [
-            'ISIS',
-            'BGP',
-            'MOBILE',
-            'SUBSCRIBER',
-            'CONNECTED',
-            'DAGR',
-            'RIP',
-            'OSPF',
-            'STATIC',
-            'RPL',
-            'EIGRP',
-            'LOCAL',
-        ]
-        return protocol.upper() in protocols
+        if isinstance(protocol, str):
+            protocols = [
+                'ISIS',
+                'BGP',
+                'MOBILE',
+                'SUBSCRIBER',
+                'CONNECTED',
+                'DAGR',
+                'RIP',
+                'OSPF',
+                'STATIC',
+                'RPL',
+                'EIGRP',
+                'LOCAL',
+            ]
+            if not protocol.upper() in protocols:
+                raise ProtocolError
+        else:
+            raise ProtocolError
 
     def run_iperf(self):
         """Run iPerf to check the health of the link.
@@ -147,14 +151,11 @@ class Link(object):
         :type protocol: str
         """
         try:
-            # If the protocol is wrong, return False.
-            # This prevents an accidental flush bc of a human error.
-            if not self._check_protocol(protocol):
-                raise ProtocolError(protocol)
+            # If the protocol is wrong, raise an error.
+            self._check_protocol(protocol)
         except ProtocolError as e:
             self.logger.error(e.message)
             raise
-            return False
 
         path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
         version = 4
@@ -189,13 +190,9 @@ class Link(object):
         :type protocol: str
         :type client: gRPC Client object
         """
-        if isinstance(protocol, str):
-            routing = self.check_routing(protocol)
-            if not routing: #If there is NOT an error in routing.
-                iperf = self.run_iperf()
-                return iperf
-            else:
-                return routing
+        routing = self.check_routing(protocol)
+        if not routing: #If there is NOT an error in routing.
+            iperf = self.run_iperf()
+            return iperf
         else:
-            self.logger.critical('Expecting type string as the argument.')
-            sys.exit(1)
+            return routing

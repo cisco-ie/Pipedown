@@ -102,3 +102,6 @@ class LinkTestCase(unittest.TestCase, object):
         with self.assertRaises(GRPCError):
             mock_get.return_value = err, output_bad
             self.link.check_routing('isis')
+
+if __name__ == '__main__':
+    unittest.main()
