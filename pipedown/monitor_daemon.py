@@ -83,15 +83,16 @@ def monitor(section, lock, health):
         else:
             #Flushing connection to Internet due to Data center link being faulty.
             LOGGER.warning('Link %s is down.', section)
-            reply = 'Link is back up, but no action has been taken'
             #This is currently static, as we support more types will add to config file.
             lock.acquire()
-            if all(value is True for value in health.value()):
+            health[section] = result
+            if all(health.values()):
                 if flush:
                     reply = response.model_selection(yang, client, flush_as, drop_policy_name)
                     LOGGER.info(reply)
                     flushed = True
-                    health[section]
+            else:
+                reply = section
             if alert:
                 response.alert(alert_type, alert_address, reply)
                 alert = False
@@ -123,6 +124,7 @@ def daemon():
         d = multiprocessing.Process(name=section, target=monitor, args=(section, lock, health))
         jobs.append(d)
         d.start()
+    d.join()
 
 if __name__ == '__main__':
     daemon()

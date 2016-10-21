@@ -141,7 +141,7 @@ def apply_policy(grpc_client, bgp_config):
 def alert(model, arg, reply):
     """Alert the user (email or console) if there is an error.
     """
-    message = 'Link is down, check router. ' + reply
+    message = 'Link is down, check router: ' + reply
     if model == 'text':
         phone_number = arg
         token = '416978636d5774754655457466614d6f6a4a4574464c4941584777475a7870496758446f5775474f65535176'
