@@ -1,0 +1,79 @@
+{
+ "Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {
+  "instance": [
+   {
+    "instance-name": "default",
+    "instance-as": [
+     {
+      "as": 0,
+      "four-byte-as": [
+       {
+        "as": 1,
+        "default-vrf": {
+         "bgp-entity": {
+          "neighbors": {
+           "neighbor": [
+            {
+             "neighbor-address": "10.1.1.2",
+             "remote-as": {
+              "as-xx": 0,
+              "as-yy": 1
+             },
+             "neighbor-afs": {
+              "neighbor-af": [
+               {
+                "af-name": "ipv4-unicast",
+                "activate": [
+                 null
+                ],
+                "next-hop-self": true
+               },
+               {
+                "af-name": "ipv6-unicast",
+                "activate": [
+                 null
+                ],
+                "next-hop-self": true
+               }
+              ]
+             }
+            },
+            {
+             "neighbor-address": "11.1.1.20",
+             "remote-as": {
+              "as-xx": 0,
+              "as-yy": 65000
+             },
+            "neighbor-afs": {
+            "neighbor-af": [
+             {
+              "af-name": "ipv4-unicast",
+              "activate": [
+               null
+              ],
+              "route-policy-in": "pass",
+              "route-policy-out": "pass"
+             },
+             {
+              "af-name": "ipv6-unicast",
+              "activate": [
+               null
+              ],
+              "route-policy-in": "pass",
+              "route-policy-out": "pass"
+             }
+            ]
+            }
+            }
+           ]
+          }
+         }
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

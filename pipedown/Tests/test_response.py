@@ -1,56 +1,139 @@
 import unittest
 import logging
-import json
+import os
 from mock import patch
-from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
-from Flush.bgp_flush import Flush_BGP
+import json
+from pipedown.Response import response
+from pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
+from pipedown.Tools.exceptions import GRPCError
 
 logging.basicConfig(level=logging.DEBUG)
 
-class FlushBGPTestCase(unittest.TestCase, object):
+def read_file(filename):
+    """Takes a filename and concatenates it with the location of this file.
+    :param filename: The filename
+    :param type: str
+    """
+    location = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(location, filename)) as f:
+        return f.read()
+
+class ResponseTestCase(unittest.TestCase, object):
     @classmethod
     @patch('pipedown.Monitor.link.logging.getLogger')
     def setUpClass(cls, mock_logging):
         cls.grpc_client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'test', 'test')
-        cls.neighbor_as = 44444
+        cls.neighbor_as = [65000]
         cls.policy_name = 'drop'
-        location = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(location, '../Examples/bgp-good.txt')) as f:
-            cls.bgp_config = f.read()
-    @patch('Flush.bgp_flush.Flush_BGP.get_bgp_neighbors')
-    def test_bgp_flush(self, mock_get_bgp_neighbors):
-        config_path = 'Flush/get-neighborsq.json'
-        
-        flush = Flush_BGP(self.client, ext_as, 'drop', config_path)
-
-        # make the mock call to the get_bgp_neighbors
-        mock_get_bgp_neighbors.return_value = [('2.2.3.7', 'pass'), ('4.4.4.1', 'pass')]
-        rm_neighbors = list(zip(*mock_get_bgp_neighbors.return_value)[0])
-
-        
-        # get the new BGP config after the mock call
-        new_bgp_config = self.client.getconfig(self.read_file(config_path))
-        new_bgp_config = json.loads(new_bgp_config)
-        
-        res = new_bgp_config["Cisco-IOS-XR-ipv4-bgp-cfg:bgp"]["instance"][0]["instance-as"][0]["four-byte-as"][0]
-        res = res["default-vrf"]["bgp-entity"]["neighbors"]["neighbor"]
-        
-        for line in res:
-            ip = line["neighbor-address"]
-            if ip in rm_neighbors:
-                # check if the new policy is drop
-                new_policy = line['neighbor-afs']['neighbor-af'][0]['route-policy-out']
-                self.assertTrue(new_policy, 'drop')
-
-    @patch('pipedown.Response.get_bgp_config')
-    @patch('pipedown.Response.apply_policy')
-    def test_cisco_update_connection(self, apply_mock, get_mock):
+        cls.cisco_config = read_file('Examples/BGP/cisco-orig.txt')
+        cls.open_config = read_file('Examples/BGP/openconfig.txt')
 
 
+    @patch('pipedown.Response.response.get_bgp_config')
+    @patch('pipedown.Response.response.apply_policy')
+    def test_cisco_update(self, apply_mock, get_mock):
+        # Test when everything is working correctly.
+        get_mock.return_value = self.cisco_config
+        apply_mock.return_value = None
+        updated_neigh = response.cisco_update(
+            self.grpc_client,
+            self.neighbor_as,
+            self.policy_name
+            )
+        correct_neigh = json.dumps(
+            [
+                ['11.1.1.20', 'ipv4-unicast', 'pass'],
+                ['11.1.1.20', 'ipv6-unicast', 'pass']
+            ]
+        )
+        correct_neigh = 'Updated neighbors and policy: %s' % correct_neigh
+        self.assertEqual(updated_neigh, correct_neigh)
+        get_mock.assert_called_with(
+            self.grpc_client,
+            '{"Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {"instance": [{"instance-name": "default","instance-as": [{"four-byte-as": [{"default-vrf": {"bgp-entity": {"neighbors": {"neighbor": [{"neighbor-afs": {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}'
+            )
+        cisco_new = read_file('Examples/BGP/cisco-new.txt')
+        apply_mock.assert_called_with(self.grpc_client, json.loads(cisco_new))
 
+        # Test when GRPC throws an error on merge.
+        error = read_file('Examples/Errors/grpc-message.txt')
+        apply_mock.side_effect = GRPCError(error)
+        updated_neigh = response.cisco_update(
+            self.grpc_client,
+            self.neighbor_as,
+            self.policy_name
+            )
+        self.assertEqual(
+            updated_neigh,
+            'No neighbors updated due to GRPC Merge Error.'
+            )
 
+        # Test when GRPC throws an error on get.
+        error = read_file('Examples/Errors/grpc-tag.txt')
+        get_mock.side_effect = GRPCError(error)
+        updated_neigh = response.cisco_update(
+            self.grpc_client,
+            self.neighbor_as,
+            self.policy_name
+            )
+        self.assertEqual(
+            updated_neigh,
+            'No neighbors updated due to GRPC Get Error.'
+            )
 
+    @patch('pipedown.Response.response.get_bgp_config')
+    @patch('pipedown.Response.response.apply_policy')
+    def test_open_config_update(self, apply_mock, get_mock):
+        # Test when everything is working correctly.
+        get_mock.return_value = self.open_config
+        apply_mock.return_value = None
+        updated_neigh = response.open_config_update(
+            self.grpc_client,
+            self.neighbor_as,
+            self.policy_name
+            )
+        correct_neigh = json.dumps(
+            [
+                ['11.1.1.20', 'ipv4-unicast', 'pass'],
+                ['11.1.1.20', 'ipv6-unicast', 'pass']
+            ]
+        )
+        correct_neigh = 'Updated neighbors and policy: %s' % correct_neigh
+        self.assertEqual(updated_neigh, correct_neigh)
 
+        # Test when GRPC throws an error on merge.
+        error = read_file('Examples/Errors/grpc-message.txt')
+        apply_mock.side_effect = GRPCError(error)
+        updated_neigh = response.open_config_update(
+            self.grpc_client,
+            self.neighbor_as,
+            self.policy_name
+            )
+        self.assertEqual(
+            updated_neigh,
+            'No neighbors updated due to GRPC Merge Error.'
+            )
+
+        # Test when GRPC throws an error on get.
+        error = read_file('Examples/Errors/grpc-tag.txt')
+        get_mock.side_effect = GRPCError(error)
+        updated_neigh = response.open_config_update(
+            self.grpc_client,
+            self.neighbor_as,
+            self.policy_name
+            )
+        self.assertEqual(
+            updated_neigh,
+            'No neighbors updated due to GRPC Get Error.'
+            )
+
+    @patch('pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client.getconfig')
+    def test_bgp_config(self, mock_get):
+        pass
+
+    def test_apply_policy(self):
+        pass
+        #mock_get_bgp_neighbors.return_value = [('2.2.3.7', 'pass'), ('4.4.4.1', 'pass')]
 
 if __name__ == '__main__':
     unittest.main()

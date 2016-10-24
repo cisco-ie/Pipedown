@@ -29,7 +29,7 @@ from pipedown.Tools.exceptions import GRPCError
 LOGGER = logging.getLogger()
 
 
-def cisco_update_connection(grpc_client, neighbor_as, new_policy_name):
+def cisco_update(grpc_client, neighbor_as, new_policy_name):
     """Initiate the GRPC client to perform the
    neighbor removal and commits, using Cisco YANG models.
 
@@ -54,11 +54,19 @@ def cisco_update_connection(grpc_client, neighbor_as, new_policy_name):
     for neighbor in neighbors:
         as_val = neighbor['remote-as']['as-yy']
         if as_val in neighbor_as:
-            # Change the policy to drop or pass.
-            curr_policy = neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out']
-            neighbor['neighbor-afs']['neighbor-af'][0]['route-policy-out'] = new_policy_name
-            # Add the removed or added neighbors to list.
-            updated_neighbors.append((neighbor['neighbor-address'], curr_policy))
+            neighbor_af = neighbor['neighbor-afs']['neighbor-af']
+            for ipv in neighbor_af:
+                # Change the policy to drop or pass.
+                curr_policy = ipv['route-policy-out']
+                ipv['route-policy-out'] = new_policy_name
+                # Add the removed or added neighbors to list.
+                updated_neighbors.append(
+                    (
+                        neighbor['neighbor-address'],
+                        ipv['af-name'],
+                        curr_policy
+                        )
+                    )
     try:
         apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
@@ -67,7 +75,7 @@ def cisco_update_connection(grpc_client, neighbor_as, new_policy_name):
     return 'Updated neighbors and policy: %s' % updated_neighbors
 
 
-def open_config_flush(grpc_client, neighbor_as, new_policy_name):
+def open_config_update(grpc_client, neighbor_as, new_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
    neighbor removal and commits, using Cisco YANG models.
 
@@ -92,11 +100,16 @@ def open_config_flush(grpc_client, neighbor_as, new_policy_name):
             # Change the policy to drop.
             ipvs = neighbor['afi-safis']['afi-safi']
             for ipv in ipvs:
-                curr_policy = ipv['apply-policy']['config']['export-policy']
+                curr_policy = ipv['apply-policy']['config']['export-policy'][0]
                 ipv['apply-policy']['config']['export-policy'] = new_policy_name
-                ip_type = ipv['afi-safi-name']
                 # Add the removed neighbors to list.
-                updated_neighbors.append((neighbor['neighbor-address'], ip_type, curr_policy))
+                updated_neighbors.append(
+                    (
+                        neighbor['neighbor-address'],
+                        ipv['afi-safi-name'],
+                        curr_policy
+                    )
+                )
     try:
         apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
@@ -172,13 +185,13 @@ def model_selection(model, client, arg1, arg2):
     """Based on the model-type selected in the configuration file, call the
        correct function.
        Will contain a switch statement of all the functions (cisco_flush,
-       open_config_flush, etc.).
+       open_config_update, etc.).
 
        If someone wants to add a response option, they will add the function
        to this module and add to the switch statement here.
     """
     functions = {
-        'cisco': cisco_update_connection,
-        'openconfig': open_config_flush,
+        'cisco': cisco_update,
+        'openconfig': open_config_update,
     }
     return functions[model](client, arg1, arg2)

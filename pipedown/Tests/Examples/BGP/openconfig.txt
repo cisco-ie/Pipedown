@@ -1,0 +1,84 @@
+{
+ "openconfig-bgp:bgp": {
+  "neighbors": {
+   "neighbor": [
+    {
+     "neighbor-address": "10.1.1.2",
+     "config": {
+      "neighbor-address": "10.1.1.2",
+      "peer-as": 1
+     },
+     "transport": {
+      "config": {
+       "local-address": "Loopback0"
+      }
+     },
+     "afi-safis": {
+      "afi-safi": [
+       {
+        "afi-safi-name": "ipv4-unicast",
+        "config": {
+         "afi-safi-name": "ipv4-unicast",
+         "enabled": true
+        }
+       },
+       {
+        "afi-safi-name": "ipv6-unicast",
+        "config": {
+         "afi-safi-name": "ipv6-unicast",
+         "enabled": true
+        }
+       }
+      ]
+     }
+    },
+    {
+     "neighbor-address": "11.1.1.20",
+     "config": {
+      "neighbor-address": "11.1.1.20",
+      "peer-as": 65000,
+      "description": "eBGP to devbox"
+     },
+     "afi-safis": {
+      "afi-safi": [
+       {
+        "afi-safi-name": "ipv4-unicast",
+        "config": {
+         "afi-safi-name": "ipv4-unicast",
+         "enabled": true
+        },
+        "apply-policy": {
+         "config": {
+          "import-policy": [
+           "pass"
+          ],
+          "export-policy": [
+           "pass"
+          ]
+         }
+        }
+       },
+       {
+        "afi-safi-name": "ipv6-unicast",
+        "config": {
+         "afi-safi-name": "ipv6-unicast",
+         "enabled": true
+        },
+        "apply-policy": {
+         "config": {
+          "import-policy": [
+           "pass"
+          ],
+          "export-policy": [
+           "pass"
+          ]
+         }
+        }
+       }
+      ]
+     }
+    }
+   ]
+  }
+ }
+}

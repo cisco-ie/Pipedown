@@ -1,0 +1,11 @@
+{
+ "cisco-grpc:errors": {
+  "error": [
+   {
+    "error-type": "protocol",
+    "error-message": "unknown-element",
+    "error-severity": "error"
+   }
+  ]
+ }
+}
