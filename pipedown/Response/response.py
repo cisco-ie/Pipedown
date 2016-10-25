@@ -96,7 +96,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
     neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
     for neighbor in neighbors:
         as_val = neighbor['config']['peer-as']
-        if as_val in neighbor_as:
+        if as_val is neighbor_as:
             # Change the policy to drop.
             ipvs = neighbor['afi-safis']['afi-safi']
             for ipv in ipvs:
@@ -191,8 +191,6 @@ def model_selection(model, client, neighbor_as, policy_name):
        to this module and add to the switch statement here.
     """
     # Putting string of AS into a list
-    neighbor_as = neighbor_as.split()
-    neighbor_as = map(int, neighbor_as)
     functions = {
         'cisco': cisco_update,
         'openconfig': open_config_update,
