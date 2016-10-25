@@ -4,6 +4,16 @@ from mock import patch, Mock
 from pipedown.Monitor.link import Link
 from pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
+
+def read_file(filename):
+    """Takes a filename and concatenates it with the location of this file.
+    :param filename: The filename
+    :param type: str
+    """
+    location = os.path.dirname(os.path.realpath(__file__))
+    with open(os.path.join(location, filename)) as f:
+        return f.read()
+
 class LinkTestCase(unittest.TestCase, object):
     @staticmethod
     def read_file(filepath):
@@ -108,30 +118,32 @@ class LinkTestCase(unittest.TestCase, object):
             mock_get.assert_not_called()
             self.assertFalse(result)
 
-        output_good = self.read_file('Examples/protocol-active.txt')
+        output_good = self.read_file('Examples/RIB/protocol-active.txt')
         mock_get.return_value = '', output_good
         self.assertFalse(self.ipv4_link.check_routing('isis'))
         self.assertTrue(self.ipv4_link.check_routing('bgp'))
 
-        output_bad = self.read_file('Examples/bad-protocol.txt')
+        output_bad = self.read_file('Examples/RIB/bad-protocol.txt')
         mock_get.return_value = '', output_bad
         self.assertTrue(self.ipv4_link.check_routing('isis'))
 
-        output_bad = self.read_file('Examples/non-active.txt')
+        output_bad = self.read_file('Examples/RIB/non-active.txt')
         mock_get.return_value = '', output_bad
         self.assertTrue(self.ipv4_link.check_routing('isis'))
 
+        error_tag = read_file('Examples/Errors/grpc-tag.txt')
+        error_msg = read_file('Examples/Errors/grpc-message.txt')
         from pipedown.Tools.exceptions import GRPCError
         with self.assertRaises(GRPCError):
             err = Mock(message='error string')
             mock_get.return_value = err, output_bad
             self.ipv4_link.check_routing('isis')
             
-            err = Mock(message='{"cisco-grpc:errors": {"error": [{"error-type": "protocol","error-tag": "unknown-element","error-severity": "error","error-path": "Cisco-IOS-XR-ip-rib-ipv4-oper:ns1:rib/ns1:vrf"}]}}')
+            err = Mock(message=error_tag)
             mock_get.return_value = err, output_bad
             self.ipv4_link.check_routing('isis')
 
-            err = Mock(message='{"cisco-grpc:errors": {"error": [{"error-type": "application","error-tag": "operation-failed","error-severity": "error","error-message": "The instance name is used already: asn 0.1 inst-name default"}]}}')
+            err = Mock(message=error_msg)
             mock_get.return_value = err, output_bad
             self.ipv4_link.check_routing('isis')
 
@@ -143,16 +155,16 @@ class LinkTestCase(unittest.TestCase, object):
             mock_get.assert_not_called()
             self.assertFalse(result)
 
-        output_good = self.read_file('Examples/protocol-active.txt')
+        output_good = self.read_file('Examples/RIB/protocol-active.txt')
         mock_get.return_value = '', output_good
         self.assertFalse(self.ipv6_link.check_routing('isis'))
         self.assertTrue(self.ipv6_link.check_routing('bgp'))
 
-        output_bad = self.read_file('Examples/bad-protocol.txt')
+        output_bad = self.read_file('Examples/RIB/bad-protocol.txt')
         mock_get.return_value = '', output_bad
         self.assertTrue(self.ipv6_link.check_routing('isis'))
 
-        output_bad = self.read_file('Examples/non-active.txt')
+        output_bad = self.read_file('Examples/RIB/non-active.txt')
         mock_get.return_value = '', output_bad
         self.assertTrue(self.ipv6_link.check_routing('isis'))
 

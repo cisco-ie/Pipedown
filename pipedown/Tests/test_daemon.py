@@ -2,7 +2,7 @@ import unittest
 import os
 from shutil import copyfile, move
 import mock
-import monitor_daemon
+from pipedown import monitor_daemon
 
 
 class DaemonTestCase(unittest.TestCase):
@@ -52,7 +52,7 @@ class DaemonTestCase(unittest.TestCase):
             self.assertRegexpMatches(log, 'Config file error:')
         self.assertEqual(cm.exception.code, 1)
 
-    @mock.patch('monitor_daemon.Link.health', side_effect=[True])
+    @mock.patch('pipedown.monitor_daemon.Link.health', side_effect=[True])
     def test_bad_as_format(self, mock_health):
         copyfile(
             os.path.join(self.location, 'Config/bad_as.config'),
@@ -65,8 +65,8 @@ class DaemonTestCase(unittest.TestCase):
             self.assertRegexpMatches(log, 'Flush AS is in the wrong format for')
         self.assertEqual(cm.exception.code, 1)
 
-    @mock.patch('monitor_daemon.Link.health', side_effect=[False, True])
-    @mock.patch('monitor_daemon.Flush_BGP')
+    @mock.patch('pipedown.monitor_daemon.Link.health', side_effect=[False, True])
+    @mock.patch('pipedown.monitor_daemon.Flush_BGP')
     def test_link_good_log(self, mock_flush, mock_health):
         copyfile(
             os.path.join(self.location, 'Config/monitor_good.config'),
