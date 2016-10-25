@@ -21,9 +21,9 @@ import multiprocessing
 import sys
 import ConfigParser
 import pipedown.log as log
-from pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
-from pipedown.Monitor.link import Link
-from pipedown.Response import response
+from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
+from Monitor.link import Link
+from Response import response
 
 LOGGER = log.log()
 
