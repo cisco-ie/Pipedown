@@ -181,7 +181,7 @@ def alert(model, arg, reply):
         send.quit()
         return 'Successfully sent Email'
 
-def model_selection(model, client, arg1, arg2):
+def model_selection(model, client, neighbor_as, policy_name):
     """Based on the model-type selected in the configuration file, call the
        correct function.
        Will contain a switch statement of all the functions (cisco_flush,
@@ -190,8 +190,11 @@ def model_selection(model, client, arg1, arg2):
        If someone wants to add a response option, they will add the function
        to this module and add to the switch statement here.
     """
+    # Putting string of AS into a list
+    neighbor_as = neighbor_as.split()
+    neighbor_as = map(int, neighbor_as)
     functions = {
         'cisco': cisco_update,
         'openconfig': open_config_update,
     }
-    return functions[model](client, arg1, arg2)
+    return functions[model](client, neighbor_as, policy_name)
