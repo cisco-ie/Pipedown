@@ -20,7 +20,7 @@ is changed to stop peering with external routers.
 import multiprocessing
 import sys
 import ConfigParser
-import pipedown.log as log
+import log as log
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
 from Response import response
