@@ -20,7 +20,6 @@ class GRPCError(Exception):
     def __init__(self, err):
         self.err = err
         try:
-            self.err = json.loads(err)
             message = self.err['cisco-grpc:errors']['error']
             if 'error-message' in self.message:
                 self.message = 'A gRPC error occurred: %s', message['error-message']
