@@ -21,10 +21,10 @@ class GRPCError(Exception):
         self.err = err
         try:
             self.err = json.loads(err)
-            message = self.err['cisco-grpc:errors']['error'][0]
-            if 'error-message' in self.err:
+            message = self.err['cisco-grpc:errors']['error']
+            if 'error-message' in self.message:
                 self.message = 'A gRPC error occurred: %s', message['error-message']
-            elif 'error-tag' in self.err:
+            elif 'error-tag' in self.message:
                 self.message = 'A gRPC error occurred: %s', message['error-tag']
         except TypeError:  #err is a str instead of a JSON object
             self.message = err
