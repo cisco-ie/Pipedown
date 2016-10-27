@@ -72,14 +72,14 @@ def monitor(section, lock, health):
         if result is False:
             LOGGER.info('Link is good.')
             if flushed:
-                LOGGER.warning('Link is back up, adding neighbor.')
+                LOGGER.warning('Link is back up, adding neighbor...')
                 #This is currently static, as we support more types will add to config file.
                 lock.acquire()
                 if flush:
                     reply = response.model_selection(yang, client, bgp_as, pass_policy_name)
                     LOGGER.info(reply)
                 else:
-                    reply = 'Link is back up, but no action has been taken'
+                    reply = 'Link is back up, but no action has been taken.'
                     LOGGER.info(reply)
                 lock.release()
                 flushed = False
@@ -94,6 +94,8 @@ def monitor(section, lock, health):
                     reply = response.model_selection(yang, client, bgp_as, drop_policy_name)
                     LOGGER.info(reply)
                     flushed = True
+                elif flush and flushed:
+                    LOGGER.info('Link already flushed.')
             else:
                 reply = section
             if alert:
