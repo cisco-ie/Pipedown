@@ -101,7 +101,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
             ipvs = neighbor['afi-safis']['afi-safi']
             for ipv in ipvs:
                 curr_policy = ipv['apply-policy']['config']['export-policy'][0]
-                ipv['apply-policy']['config']['export-policy'] = new_policy_name
+                ipv['apply-policy']['config']['export-policy'] = [new_policy_name]
                 # Add the removed neighbors to list.
                 updated_neighbors.append(
                     (
