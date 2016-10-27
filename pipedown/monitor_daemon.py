@@ -93,7 +93,8 @@ def monitor(section, lock, health):
                 if flush and not flushed:
                     reply = response.model_selection(yang, client, bgp_as, drop_policy_name)
                     LOGGER.info(reply)
-                    flushed = True
+                    if 'error' not in reply:
+                        flushed = True
                 elif flush and flushed:
                     LOGGER.info('Link already flushed.')
             else:
