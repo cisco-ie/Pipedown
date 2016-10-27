@@ -84,7 +84,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
     :param new_policy_name: Name of the policy file to be used when
                              updating a neighbor.
     """
-    bgp_config_template = '{"openconfig-bgp:bgp": {"neighbors":[null]}}'
+    bgp_config_template = '{"openconfig-bgp:bgp": {"neighbors": [null]}}'
     # Get the BGP config.
     try:
         bgp_config = get_bgp_config(grpc_client, bgp_config_template)
@@ -96,7 +96,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
     neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
     for neighbor in neighbors:
         as_val = neighbor['config']['peer-as']
-        if as_val is neighbor_as:
+        if as_val in neighbor_as:
             # Change the policy to drop.
             ipvs = neighbor['afi-safis']['afi-safi']
             for ipv in ipvs:
