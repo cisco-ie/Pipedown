@@ -51,7 +51,7 @@ def monitor(section, lock, health):
         if flush:
             yang = config.get('DEFAULT', 'yang')
             try:
-                bgp_as = int(config.get('DEFAULT', 'bgp_as'))
+                bgp_as = config.get('DEFAULT', 'bgp_as')
             except ValueError:
                 LOGGER.error('BGP AS must be an integer.')
                 sys.exit(1)

@@ -190,6 +190,8 @@ def model_selection(model, client, neighbor_as, policy_name):
        to this module and add to the switch statement here.
     """
     # Putting string of AS into a list
+    neighbor_as = neighbor_as.split()
+    neighbor_as = map(int, neighbor_as)
     functions = {
         'cisco': cisco_update,
         'openconfig': open_config_update,
