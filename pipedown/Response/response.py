@@ -111,7 +111,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
                     )
                 )
     try:
-        apply_policy(grpc_client, json.dumps(bgp_config))
+        apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
         return 'No neighbors updated due to GRPC Merge Error.'
     updated_neighbors = json.dumps(updated_neighbors)
@@ -137,6 +137,7 @@ def get_bgp_config(grpc_client, bgp_config_template):
 def apply_policy(grpc_client, bgp_config):
     """Apply the new BGP policy by using gRPC."""
     LOGGER.info('Changing the bgp neighbors...')
+    bgp_config = json.dumps(bgp_config)
     try:
         response = grpc_client.mergeconfig(bgp_config)
         if response.errors:
