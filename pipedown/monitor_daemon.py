@@ -90,7 +90,7 @@ def monitor(section, lock, health):
             lock.acquire()
             health[section] = result
             if all(health.values()):
-                if flush:
+                if flush and not flushed:
                     reply = response.model_selection(yang, client, bgp_as, drop_policy_name)
                     LOGGER.info(reply)
                     flushed = True
