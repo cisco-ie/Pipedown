@@ -83,7 +83,6 @@ def monitor(section, lock, health):
                     LOGGER.info(reply)
                 lock.release()
                 flushed = False
-                break
         else:
             #Flushing connection to Internet due to Data center link being faulty.
             LOGGER.warning('Link %s is down.', section)
@@ -101,7 +100,6 @@ def monitor(section, lock, health):
                 response.alert(alert_type, alert_address, reply)
                 alert = False
             lock.release()
-            break
 
 def grab_sections():
     #Reading config file for section headers.
