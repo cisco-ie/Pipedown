@@ -10,6 +10,10 @@ The end goal of the Pipedown is to monitor a CDN router and ensures that it has 
 
 The application solves the end goal by checking a link that connects back to the data center and ensure that it is healthy. The link is determined to be healthy using [iPerf](https://iperf.fr/) based on parameters such as jitter, bandwidth, packet loss, and dropped packets. If the link is determined to be unhealthy, then the link connecting to the internet would be flushed using [gRPC](http://www.grpc.io/) based on a user defined AS and policy.
 
+#### Prerequisites:
+
+Cisco IOS-XR box running version 6.1.2.12i and above.
+
 #### Current Limitations:
 
 Currently for monitoring multiple links, each link needs to have its own source ip address.
