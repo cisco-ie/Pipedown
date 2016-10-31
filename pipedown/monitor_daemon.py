@@ -18,6 +18,7 @@ deemed by the thresholds set,then the policy on the link to the Internet
 is changed to stop peering with external routers.
 """
 import multiprocessing
+import os
 import sys
 import ConfigParser
 from grpc.framework.interfaces.face.face import AbortionError
@@ -33,9 +34,10 @@ LOGGER = log.log()
 
 def monitor(section, lock, health_dict):
     #Read in Configuration for Daemon.
+    location = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser.ConfigParser()
     try:
-        config.read('monitor.config')
+        config.read(os.path.join(location, 'monitor.config'))
         destination = config.get(section, 'destination')
         source = config.get(section, 'source')
         protocols = config.get(section, 'protocols')
@@ -115,10 +117,14 @@ def monitor(section, lock, health_dict):
 
 def grab_sections():
     #Reading config file for section headers.
+    location = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser.ConfigParser()
     try:
-        config.read('monitor.config')
+        config.read(os.path.join(location, 'monitor.config'))
         sections = config.sections()
+        if not sections:
+            LOGGER.error('Config file missing section')
+            sys.exit(1)
         return sections
     except (ConfigParser.Error), e:
         sys.exit(e)
