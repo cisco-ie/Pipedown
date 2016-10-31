@@ -30,9 +30,10 @@ LOGGER = log.log()
 
 def monitor(section, lock, health):
     #Read in Configuration for Daemon.
+    location = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser.ConfigParser()
     try:
-        config.read('monitor.config')
+        config.read(os.path.join(location, 'monitor.config'))
         destination = config.get(section, 'destination')
         source = config.get(section, 'source')
         protocol = config.get(section, 'protocol')
@@ -112,6 +113,9 @@ def grab_sections():
     try:
         config.read(os.path.join(location, 'monitor.config'))
         sections = config.sections()
+        if not sections:
+            LOGGER.error('Config file missing section')
+            sys.exit(1)
         return sections
     except (ConfigParser.Error), e:
         sys.exit(e)

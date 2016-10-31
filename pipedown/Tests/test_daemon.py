@@ -40,35 +40,20 @@ class DaemonTestCase(unittest.TestCase):
             monitor_daemon.grab_sections()
         self.assertRaisesRegexp(cm.exception.code, 'File contains no section headers')
 
-    def test_grab_sections_misssing_object(self):
+    def test_grab_sections_missing_object(self):
+        open('router_connected.log', 'w').close()
         copyfile(
             os.path.join(self.location, 'Examples/Config/no_protocol.config'),
             os.path.join(self.location, '../monitor.config')
         )
+        lock = None
+        health = None
         with self.assertRaises(SystemExit) as cm:
-            monitor_daemon.daemon()
-        with open(os.path.join(self.location, '../router_connected.log')) as debug_log:
+            monitor_daemon.monitor('BGP', lock, health)
+        with open('router_connected.log') as debug_log:
             log = debug_log.readlines()[0]
             self.assertRegexpMatches(log, 'Config file error:')
         self.assertEqual(cm.exception.code, 1)
-
-    @mock.patch('pipedown.monitor_daemon.Link.health', side_effect=[False, True])
-    @mock.patch('pipedown.monitor_daemon.response')
-    def test_link_good_log(self, mock_flush, mock_health):
-        copyfile(
-            os.path.join(self.location, 'Examples/Config/monitor_good.config'),
-            os.path.join(self.location, '../monitor.config')
-        )
-        mock_flush.returnvalue = None
-        mock_flush.get_bgp_neighbors.returnvalue = 'Testing'
-
-        monitor_daemon.daemon()
-        with open(os.path.join(self.location, '../router_connected.log')) as debug_log:
-            log = debug_log.readlines()
-            good_log = log[1]
-            bad_log = log[3]
-        self.assertRegexpMatches(good_log, 'Link is good')
-        self.assertRegexpMatches(bad_log, 'Link is down')
 
     def tearDown(self):
         if os.path.isfile(os.path.join(self.location, '../monitortest.config')):
