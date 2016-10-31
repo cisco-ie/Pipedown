@@ -106,10 +106,10 @@ Run the monitor daemon. It uses multithreading so a instance will spawn for ever
 
 Do this at the top-level directory:
 
-```python -m unittest discover Tests```
+```python -m unittest discover pipedown.Tests```
 
 For test_bgp_flush.py
-``` python -m unittest Tests.test_bgp_flush.FlushBGPTestCase```
+``` python -m unittest pipedown.Tests.test_bgp_flush.FlushBGPTestCase```
 
 ### Integration Tests
 
