@@ -20,21 +20,26 @@ is changed to stop peering with external routers.
 import multiprocessing
 import sys
 import ConfigParser
+from grpc.framework.interfaces.face.face import AbortionError
+
 import log as log
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
+from Monitor.health import health
 from Response import response
+from pipedown.Tools.exceptions import GRPCError
 
 LOGGER = log.log()
 
-def monitor(section, lock, health):
+def monitor(section, lock, health_dict):
     #Read in Configuration for Daemon.
     config = ConfigParser.ConfigParser()
     try:
         config.read('monitor.config')
         destination = config.get(section, 'destination')
         source = config.get(section, 'source')
-        protocol = config.get(section, 'protocol')
+        protocols = config.get(section, 'protocols')
+        protocols = protocols.split(',')
         bw_thres = config.getint(section, 'bw_thres')
         jitter_thres = config.getint(section, 'jitter_thres')
         pkt_loss = config.getint(section, 'pkt_loss')
@@ -67,42 +72,46 @@ def monitor(section, lock, health):
     while True:
         #Checking link to data center.
         LOGGER.info('Checking link health of %s', source)
-        link = Link(destination, source, client, bw_thres, jitter_thres, pkt_loss, interval)
-        result = link.health(protocol)
-        if result is False:
-            LOGGER.info('Link is good.')
-            if flushed:
-                LOGGER.warning('Link is back up, adding neighbor...')
+        link = Link(destination, source, protocols)
+        try:
+            result = health(link, client, bw_thres, jitter_thres, pkt_loss, interval)
+        except (GRPCError, AbortionError):
+            LOGGER.error('GRPC error when checking link health, health cannot be determined.')
+        else:
+            if result is False:
+                LOGGER.info('Link is good.')
+                if flushed:
+                    LOGGER.warning('Link is back up, adding neighbor...')
+                    #This is currently static, as we support more types will add to config file.
+                    lock.acquire()
+                    if flush:
+                        reply = response.model_selection(yang, client, bgp_as, pass_policy_name)
+                        LOGGER.info(reply)
+                    else:
+                        reply = 'Link is back up, but no action has been taken.'
+                        LOGGER.info(reply)
+                    lock.release()
+                    flushed = False
+            else:
+                #Flushing connection to Internet due to Data center link being faulty.
+                LOGGER.warning('Link %s is down.', section)
                 #This is currently static, as we support more types will add to config file.
                 lock.acquire()
-                if flush:
-                    reply = response.model_selection(yang, client, bgp_as, pass_policy_name)
-                    LOGGER.info(reply)
+                health_dict[section] = result
+                if all(health_dict.values()):
+                    if flush and not flushed:
+                        reply = response.model_selection(yang, client, bgp_as, drop_policy_name)
+                        LOGGER.info(reply)
+                        if 'Error' not in reply:
+                            flushed = True
+                    elif flush and flushed:
+                        LOGGER.info('Link already flushed.')
                 else:
-                    reply = 'Link is back up, but no action has been taken.'
-                    LOGGER.info(reply)
+                    reply = section
+                if alert:
+                    response.alert(alert_type, alert_address, reply)
+                    alert = False
                 lock.release()
-                flushed = False
-        else:
-            #Flushing connection to Internet due to Data center link being faulty.
-            LOGGER.warning('Link %s is down.', section)
-            #This is currently static, as we support more types will add to config file.
-            lock.acquire()
-            health[section] = result
-            if all(health.values()):
-                if flush and not flushed:
-                    reply = response.model_selection(yang, client, bgp_as, drop_policy_name)
-                    LOGGER.info(reply)
-                    if 'Error' not in reply:
-                        flushed = True
-                elif flush and flushed:
-                    LOGGER.info('Link already flushed.')
-            else:
-                reply = section
-            if alert:
-                response.alert(alert_type, alert_address, reply)
-                alert = False
-            lock.release()
 
 def grab_sections():
     #Reading config file for section headers.
@@ -120,13 +129,13 @@ def daemon():
     jobs = []
     #Creating a multiprocessing dictionary
     manager = multiprocessing.Manager()
-    health = manager.dict()
+    health_dict = manager.dict()
     for section in sections:
-        health[section] = False
+        health_dict[section] = False
     #Create lock object to ensure gRPC is only used once
     lock = multiprocessing.Lock()
     for section in sections:
-        d = multiprocessing.Process(name=section, target=monitor, args=(section, lock, health))
+        d = multiprocessing.Process(name=section, target=monitor, args=(section, lock, health_dict))
         jobs.append(d)
         d.start()
     d.join()

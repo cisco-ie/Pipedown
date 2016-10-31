@@ -20,6 +20,8 @@ list of protocols that should be tested on the interface. Multiple protocols are
 accepted in the form of a list.
 
 Works in python 2.7 and Python 3+.
+
+Author: Lisa Roach
 """
 
 import logging
@@ -28,10 +30,7 @@ from netaddr import IPAddress
 from netaddr.core import AddrFormatError
 
 from pipedown.Tools.exceptions import ProtocolError
-# import subprocess
-# import logging
-# import sys
-# from grpc.framework.interfaces.face.face import AbortionError
+
 
 LOGGER = logging.getLogger()
 
