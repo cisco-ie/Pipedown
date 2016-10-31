@@ -1,0 +1,117 @@
+{
+ "Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {
+  "instance": [
+   {
+    "instance-name": "default",
+    "instance-as": [
+     {
+      "as": 0,
+      "four-byte-as": [
+       {
+        "as": 65001,
+        "default-vrf": {
+         "bgp-entity": {
+          "neighbors": {
+           "neighbor": [
+            {
+             "neighbor-address": "2.2.3.7",
+             "remote-as": {
+              "as-xx": 0,
+              "as-yy": 2235
+             },
+             "neighbor-afs": {
+              "neighbor-af": [
+               {
+                "af-name": "ipv4-unicast",
+                "activate": [
+                 null
+                ],
+                "route-policy-in": "pass",
+                "route-policy-out": "drop"
+               }
+              ]
+             }
+            },
+            {
+             "neighbor-address": "4.4.4.1",
+             "remote-as": {
+              "as-xx": 0,
+              "as-yy": 44444
+             },
+             "neighbor-afs": {
+              "neighbor-af": [
+               {
+                "af-name": "ipv4-unicast",
+                "activate": [
+                 null
+                ],
+                "route-policy-in": "pass",
+                "route-policy-out": "drop"
+               }
+              ]
+             }
+            },
+            {
+             "neighbor-address": "10.1.1.6",
+             "remote-as": {
+              "as-xx": 0,
+              "as-yy": 65001
+             },
+             "neighbor-afs": {
+              "neighbor-af": [
+               {
+                "af-name": "ipv4-labeled-unicast",
+                "activate": [
+                 null
+                ],
+                "route-reflector-client": true,
+                "next-hop-self": true
+               },
+               {
+                "af-name": "ipv6-labeled-unicast",
+                "activate": [
+                 null
+                ],
+                "route-reflector-client": true,
+                "next-hop-self": true
+               }
+              ]
+             }
+            },
+            {
+             "neighbor-address": "10.1.1.7",
+             "remote-as": {
+              "as-xx": 0,
+              "as-yy": 65001
+             },
+             "neighbor-afs": {
+              "neighbor-af": [
+               {
+                "af-name": "ipv4-labeled-unicast",
+                "activate": [
+                 null
+                ],
+                "next-hop-self": true
+               },
+               {
+                "af-name": "ipv6-labeled-unicast",
+                "activate": [
+                 null
+                ],
+                "next-hop-self": true
+               }
+              ]
+             }
+            }
+           ]
+          }
+         }
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

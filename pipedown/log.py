@@ -1,6 +1,6 @@
 """
-This is a file that defines logging for router-connectedness
-It is a seperate file for Global logging
+This is a file that defines logging for router-connectedness.
+It is a separate file for Global logging.
 """
 import logging
 from logging.handlers import RotatingFileHandler
