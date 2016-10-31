@@ -1,0 +1,12 @@
+{
+ "cisco-grpc:errors": {
+  "error": [
+   {
+    "error-type": "protocol",
+    "error-tag": "unknown-element",
+    "error-severity": "error",
+    "error-path": "Cisco-IOS-XR-ip-rib-ipv4-oper:ns1:rib/ns1:vrf"
+   }
+  ]
+ }
+}

@@ -17,9 +17,9 @@
 import subprocess
 import logging
 import sys
-import json
-from ast import literal_eval
 from grpc.framework.interfaces.face.face import AbortionError
+
+from Tools.exceptions import GRPCError, ProtocolError
 
 class Link(object):
     """A class for monitoring interfaces with iPerf.
@@ -68,27 +68,41 @@ class Link(object):
 
     @staticmethod
     def _check_protocol(protocol):
-        """Ensure the protocol entered is valid, return True if valid and
-        False if invalid.
+        """Ensure the protocol entered is valid. Raise ProtocolError
+        if invalid.
 
         :param protocol: The given protocol.
         :type protocol: str
+
+        >>> _check_protocol('isis')
+        True
+        >>> _check_protocol('')
+        False
+        >>> _check_protocol(9)
+        False
+        >>> _check_protocol('bpg')
+        False
+
         """
-        protocols = [
-            'ISIS',
-            'BGP',
-            'MOBILE',
-            'SUBSCRIBER',
-            'CONNECTED',
-            'DAGR',
-            'RIP',
-            'OSPF',
-            'STATIC',
-            'RPL',
-            'EIGRP',
-            'LOCAL',
-        ]
-        return protocol.upper() in protocols
+        if isinstance(protocol, str):
+            protocols = [
+                'ISIS',
+                'BGP',
+                'MOBILE',
+                'SUBSCRIBER',
+                'CONNECTED',
+                'DAGR',
+                'RIP',
+                'OSPF',
+                'STATIC',
+                'RPL',
+                'EIGRP',
+                'LOCAL',
+            ]
+            if not protocol.upper() in protocols:
+                raise ProtocolError(protocol)
+        else:
+            raise ProtocolError(protocol)
 
     def run_iperf(self):
         """Run iPerf to check the health of the link.
@@ -103,7 +117,9 @@ class Link(object):
         out, err = process.communicate()
         if err:
             if 'Connection refused' in err:
-                self.logger.critical('Connection to iPerf destination refused. Assuming link is down.')
+                self.logger.critical(
+                    'Connection to iPerf destination refused. Assuming link is down.'
+                    )
             return True
         # Parse the output.
         transferred_bytes = float(out.splitlines()[2].split(',')[7])
@@ -132,35 +148,35 @@ class Link(object):
         interface has a route (and of the type specified).
 
         :param protocol: ISIS or BGP
-        :param link: IP address of the link
-        :param client: gRPC Client object
         :type protocol: str
-        :type link: str
-        :type client: gRPC Client object
         """
-        if self._check_protocol(protocol):
-            path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
-            version = 4
-            ipv6 = ''
-            if ':' in self.destination: # Checks if it is an IPv6 link.
-                version = 6
-                ipv6 = 'ipv6-'
-            path = path.format(v=version, ipv6=ipv6, link=self.destination)
-            try:
-                err, output = self.grpc_client.getoper(path)
-                if err:
-                    err = json.loads(err)
-                    try:
-                        message = err["cisco-grpc:errors"]["error"][0]["error-message"]
-                    except KeyError:
-                        message = err["cisco-grpc:errors"]["error"][0]["error-tag"]
-                    self.logger.warning('A gRPC error occurred: %s', message)
-                return protocol not in output or '"active": true' not in output
-            except AbortionError:
-                self.logger.critical('Unable to connect to local box, check your gRPC destination.')
-                sys.exit(1)
-        else:
-            self.logger.error("Invalid protocol type '%s'.", protocol)
+        try:
+            # If the protocol is wrong, raise an error.
+            self._check_protocol(protocol)
+        except ProtocolError as e:
+            self.logger.error(e.message)
+            raise
+
+        path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+        version = 4
+        ipv6 = ''
+        if ':' in self.destination: # Checks if it is an IPv6 link.
+            version = 6
+            ipv6 = 'ipv6-'
+        path = path.format(v=version, ipv6=ipv6, link=self.destination)
+        try:
+            err, output = self.grpc_client.getoper(path)
+            if err:
+                raise GRPCError(err)
+            #On GRPCError, protocol not found, or not active, return True.
+            return protocol not in output or '"active": true' not in output
+        except GRPCError as e:
+            self.logger.error(e.message)
+            raise
+        except AbortionError:
+            self.logger.critical(
+                'Unable to connect to local box, check your gRPC destination.'
+                )
             sys.exit(1)
 
     def health(self, protocol):
@@ -174,13 +190,9 @@ class Link(object):
         :type protocol: str
         :type client: gRPC Client object
         """
-        if isinstance(protocol, str):
-            routing = self.check_routing(protocol)
-            if not routing: #If there is NOT an error in routing.
-                iperf = self.run_iperf()
-                return iperf
-            else:
-                return routing
+        routing = self.check_routing(protocol)
+        if not routing: #If there is NOT an error in routing.
+            iperf = self.run_iperf()
+            return iperf
         else:
-            self.logger.critical('Expecting type string as the argument.')
-            sys.exit(1)
+            return routing

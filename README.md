@@ -104,6 +104,9 @@ Do this at the top-level directory:
 
 ```python -m unittest discover Tests```
 
+For test_bgp_flush.py
+``` python -m unittest Tests.test_bgp_flush.FlushBGPTestCase```
+
 ### Integration Tests
 
 **Running iPerf Server**
