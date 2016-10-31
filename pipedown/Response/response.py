@@ -24,7 +24,7 @@ from email.mime.text import MIMEText
 import requests
 from grpc.framework.interfaces.face.face import AbortionError
 
-from Tools.exceptions import GRPCError
+from pipedown.Tools.exceptions import GRPCError
 
 LOGGER = logging.getLogger()
 
