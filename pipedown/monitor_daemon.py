@@ -18,6 +18,7 @@ deemed by the thresholds set,then the policy on the link to the Internet
 is changed to stop peering with external routers.
 """
 import multiprocessing
+import os
 import sys
 import ConfigParser
 import log as log
@@ -106,9 +107,10 @@ def monitor(section, lock, health):
 
 def grab_sections():
     #Reading config file for section headers.
+    location = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser.ConfigParser()
     try:
-        config.read('monitor.config')
+        config.read(os.path.join(location, 'monitor.config'))
         sections = config.sections()
         return sections
     except (ConfigParser.Error), e:
