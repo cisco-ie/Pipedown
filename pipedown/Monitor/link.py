@@ -19,7 +19,7 @@ import logging
 import sys
 from grpc.framework.interfaces.face.face import AbortionError
 
-from Tools.exceptions import GRPCError, ProtocolError
+from pipedown.Tools.exceptions import GRPCError, ProtocolError
 
 class Link(object):
     """A class for monitoring interfaces with iPerf.
