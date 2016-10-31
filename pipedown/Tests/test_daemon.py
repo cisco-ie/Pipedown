@@ -17,7 +17,7 @@ class DaemonTestCase(unittest.TestCase):
 
     def test_grab_sections_good(self):
         copyfile(
-            os.path.join(self.location, 'Config/monitor_good.config'),
+            os.path.join(self.location, 'Examples/Config/monitor_good.config'),
             os.path.join(self.location, '../monitor.config')
         )
         sections = monitor_daemon.grab_sections()
@@ -25,7 +25,7 @@ class DaemonTestCase(unittest.TestCase):
 
     def test_grab_sections_multiplesections(self):
         copyfile(
-            os.path.join(self.location, 'Config/multiple_sections.config'),
+            os.path.join(self.location, 'Examples/Config/multiple_sections.config'),
             os.path.join(self.location, '../monitor.config')
         )
         sections = monitor_daemon.grab_sections()
@@ -33,7 +33,7 @@ class DaemonTestCase(unittest.TestCase):
 
     def test_grab_sections_no_section(self):
         copyfile(
-            os.path.join(self.location, 'Config/no_section.config'),
+            os.path.join(self.location, 'Examples/Config/no_section.config'),
             os.path.join(self.location, '../monitor.config')
         )
         with self.assertRaises(SystemExit) as cm:
@@ -42,39 +42,27 @@ class DaemonTestCase(unittest.TestCase):
 
     def test_grab_sections_misssing_object(self):
         copyfile(
-            os.path.join(self.location, 'Config/no_protocol.config'),
+            os.path.join(self.location, 'Examples/Config/no_protocol.config'),
             os.path.join(self.location, '../monitor.config')
         )
         with self.assertRaises(SystemExit) as cm:
-            monitor_daemon.monitor('BGP')
+            monitor_daemon.daemon()
         with open(os.path.join(self.location, '../router_connected.log')) as debug_log:
             log = debug_log.readlines()[0]
             self.assertRegexpMatches(log, 'Config file error:')
         self.assertEqual(cm.exception.code, 1)
 
-    @mock.patch('pipedown.monitor_daemon.Link.health', side_effect=[True])
-    def test_bad_as_format(self, mock_health):
-        copyfile(
-            os.path.join(self.location, 'Config/bad_as.config'),
-            os.path.join(self.location, '../monitor.config')
-        )
-        with self.assertRaises(SystemExit) as cm:
-            monitor_daemon.monitor('BGP')
-        with open(os.path.join(self.location, '../router_connected.log')) as debug_log:
-            log = debug_log.readlines()[2]
-            self.assertRegexpMatches(log, 'Flush AS is in the wrong format for')
-        self.assertEqual(cm.exception.code, 1)
-
     @mock.patch('pipedown.monitor_daemon.Link.health', side_effect=[False, True])
-    @mock.patch('pipedown.monitor_daemon.Flush_BGP')
+    @mock.patch('pipedown.monitor_daemon.response')
     def test_link_good_log(self, mock_flush, mock_health):
         copyfile(
-            os.path.join(self.location, 'Config/monitor_good.config'),
+            os.path.join(self.location, 'Examples/Config/monitor_good.config'),
             os.path.join(self.location, '../monitor.config')
         )
         mock_flush.returnvalue = None
         mock_flush.get_bgp_neighbors.returnvalue = 'Testing'
-        monitor_daemon.monitor('BGP')
+
+        monitor_daemon.daemon()
         with open(os.path.join(self.location, '../router_connected.log')) as debug_log:
             log = debug_log.readlines()
             good_log = log[1]
