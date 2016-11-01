@@ -64,7 +64,7 @@ def monitor(section, lock, health_dict):
                 sys.exit(1)
             drop_policy_name = config.get('DEFAULT', 'drop_policy_name')
             pass_policy_name = config.get('DEFAULT', 'pass_policy_name')
-    except (ConfigParser.Error, ValueError), e:
+    except (ConfigParser.Error, ValueError) as e:
         LOGGER.error('Config file error: %s', e)
         sys.exit(1)
 
@@ -126,7 +126,7 @@ def grab_sections():
             LOGGER.error('Config file missing section')
             sys.exit(1)
         return sections
-    except (ConfigParser.Error), e:
+    except (ConfigParser.Error) as e:
         sys.exit(e)
 
 def daemon():
