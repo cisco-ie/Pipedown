@@ -54,38 +54,67 @@ class Link(object):
     :type protocols: list
     """
     def __init__(self, destination, interface, protocols):
-        try:
-            #Check validity of interface addresses.
-            interfaces = [destination, interface]
-            map(IPAddress, interfaces)
-            #If they are valid IP addresses, set them.
-            self.dest = destination
-            self.interface = interface
-        except (AddrFormatError, TypeError) as e:
-            LOGGER.critical(e)
-            raise
-        try:
-            for protocol in protocols:
-                self._check_protocol(protocol)
-            #If it they are valid protocols, set them.
-            self.protocols = [x.upper() for x in protocols]
-        except ProtocolError as e:
-            LOGGER.critical(e.message)
-            raise
-        except TypeError as e:
-            LOGGER.critical(e)
+        self._interface = interface
+        self._dest = destination
+        self._protocols = protocols
         #Detect IPv4 or IPv6 for interface.
         if ':' in interface:
             self.version = 6
         else:
             self.version = 4
 
+    @property
+    def interface(self):
+        return self._interface
+
+    @interface.setter
+    def interface(self, interface):
+        try:
+            #Check validity of interface address.
+            IPAddress(interface)
+            self._interface = interface
+        except (AddrFormatError, TypeError) as e:
+            LOGGER.critical(e)
+            raise
+
+    @property
+    def destination(self):
+        return self._dest
+
+    @destination.setter
+    def destination(self, destination):
+        try:
+            #Check validity of interface address.
+            IPAddress(destination)
+            self._dest = destination
+        except (AddrFormatError, TypeError) as e:
+            LOGGER.critical(e)
+            raise
+
+    @property
+    def protocols(self):
+        return self._protocols
+
+    @protocols.setter
+    def protocols(self, protocols):
+        try:
+            for protocol in protocols:
+                self._check_protocol(protocol)
+            #If it they are valid protocols, set them.
+            self._protocols = [x.upper() for x in protocols]
+        except ProtocolError as e:
+            LOGGER.critical(e.message)
+            raise
+        except TypeError as e:
+            LOGGER.critical(e)
+
+
     def __repr__(self):
         return '{}(dest = {}, interface = {}, protocols = {})'.format(
             self.__class__.__name__,
-            self.dest,
-            self.interface,
-            self.protocols
+            self._dest,
+            self._interface,
+            self._protocols
         )
 
     def __str__(self):
@@ -93,9 +122,9 @@ class Link(object):
         'Host Router Interface IP: {},'\
         'Link Protocols to Check: {})').format(
             self.__class__.__name__,
-            self.dest,
-            self.interface,
-            [x.upper() for x in self.protocols]
+            self._dest,
+            self._interface,
+            [x.upper() for x in self._protocols]
         )
 
     def __eq__(self, other):
@@ -116,9 +145,9 @@ class Link(object):
         False
         """
         return (isinstance(other, Link)
-                and set(self.protocols) == set(other.protocols)
-                and self.dest == other.dest
-                and self.interface == other.interface
+                and set(self._protocols) == set(other.protocols)
+                and self._dest == other.dest
+                and self._interface == other.interface
                )
 
     def __ne__(self, other):
