@@ -28,7 +28,7 @@ from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
 from Monitor.health import health
 from Response import response
-from pipedown.Tools.exceptions import GRPCError
+from Tools.exceptions import GRPCError
 
 LOGGER = log.log()
 

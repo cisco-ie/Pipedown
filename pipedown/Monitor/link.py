@@ -29,7 +29,7 @@ import sys
 from netaddr import IPAddress
 from netaddr.core import AddrFormatError
 
-from pipedown.Tools.exceptions import ProtocolError
+from Tools.exceptions import ProtocolError
 
 
 LOGGER = logging.getLogger()

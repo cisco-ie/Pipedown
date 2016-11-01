@@ -16,7 +16,7 @@ import subprocess
 import logging
 from grpc.framework.interfaces.face.face import AbortionError
 
-from pipedown.Tools.exceptions import GRPCError
+from Tools.exceptions import GRPCError
 
 
 LOGGER = logging.getLogger()
