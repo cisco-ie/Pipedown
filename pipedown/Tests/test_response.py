@@ -4,9 +4,9 @@ import os
 from mock import patch
 import json
 
-from pipedown.Response import response
-from pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
-from pipedown.Tools.exceptions import GRPCError
+from Response import response
+from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
+from Tools.exceptions import GRPCError
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -21,7 +21,7 @@ def read_file(filename):
 
 class ResponseTestCase(unittest.TestCase, object):
     @classmethod
-    @patch('pipedown.Monitor.link.logging.getLogger')
+    @patch('Monitor.link.logging.getLogger')
     def setUpClass(cls, mock_logging):
         cls.grpc_client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'test', 'test')
         cls.neighbor_as = [65000]
@@ -30,8 +30,8 @@ class ResponseTestCase(unittest.TestCase, object):
         cls.open_config = read_file('Examples/BGP/openconfig.txt')
         cls.cisco_template ='{"Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {"instance": [{"instance-name": "default","instance-as": [{"four-byte-as": [{"default-vrf": {"bgp-entity": {"neighbors": {"neighbor": [{"neighbor-afs": {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}'
 
-    @patch('pipedown.Response.response.get_bgp_config')
-    @patch('pipedown.Response.response.apply_policy')
+    @patch('Response.response.get_bgp_config')
+    @patch('Response.response.apply_policy')
     def test_cisco_update(self, apply_mock, get_mock):
         # Test when everything is working correctly.
         get_mock.return_value = json.dumps(self.cisco_config)
@@ -79,8 +79,8 @@ class ResponseTestCase(unittest.TestCase, object):
             'No neighbors updated due to GRPC Get Error.'
             )
 
-    @patch('pipedown.Response.response.get_bgp_config')
-    @patch('pipedown.Response.response.apply_policy')
+    @patch('Response.response.get_bgp_config')
+    @patch('Response.response.apply_policy')
     def test_open_config_update(self, apply_mock, get_mock):
         # Test when everything is working correctly.
         get_mock.return_value = self.open_config
@@ -123,7 +123,7 @@ class ResponseTestCase(unittest.TestCase, object):
             'No neighbors updated due to GRPC Get Error.'
             )
 
-    @patch('pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getconfig')
+    @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getconfig')
     def test_get_bgp_config(self, get_mock):
         get_mock.return_value = '', self.cisco_config
         value = response.get_bgp_config(self.grpc_client, self.cisco_template)
@@ -135,7 +135,7 @@ class ResponseTestCase(unittest.TestCase, object):
             get_mock.return_value = err, ''
             response.get_bgp_config(self.grpc_client, self.cisco_template)
 
-    @patch('pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.mergeconfig')
+    @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.mergeconfig')
     def test_apply_policy(self, merge_mock):
         class A():
             def __init__(self, err, other):

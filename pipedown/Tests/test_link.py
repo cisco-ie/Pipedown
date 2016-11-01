@@ -1,8 +1,8 @@
 import unittest
 import os
 from mock import patch, Mock
-from pipedown.Monitor.link import Link
-from pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
+from Monitor.link import Link
+from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 
 
 def read_file(filename):
@@ -23,7 +23,7 @@ class LinkTestCase(unittest.TestCase, object):
             return f.read()
 
     @classmethod
-    @patch('pipedown.Monitor.link.logging.getLogger')
+    @patch('Monitor.link.logging.getLogger')
     def setUpClass(cls, mock_logging):
         cls.grpc_client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'test', 'test')
         cls.ipv4_link = Link('10.1.1.1', '10.1.1.2', cls.grpc_client)
@@ -37,7 +37,7 @@ class LinkTestCase(unittest.TestCase, object):
         self.assertEqual(lnk.pkt_loss, 5)
         self.assertEqual(lnk.interval, 5)
 
-    @patch('pipedown.Monitor.link.subprocess.Popen.communicate')
+    @patch('Monitor.link.subprocess.Popen.communicate')
     def test_iperf_v4(self, mock_communicate):
         err = 'read failed: Connection refused\n'
         mock_communicate.return_value = ['', err]
@@ -52,7 +52,7 @@ class LinkTestCase(unittest.TestCase, object):
         mock_communicate.return_value = [out, '']
         self.assertTrue(self.ipv4_link.run_iperf())
 
-    @patch('pipedown.Monitor.link.subprocess.Popen.communicate')
+    @patch('Monitor.link.subprocess.Popen.communicate')
     def test_iperf_v6(self, mock_communicate):
         err = 'read failed: Connection refused\n'
         mock_communicate.return_value = ['', err]
@@ -67,8 +67,8 @@ class LinkTestCase(unittest.TestCase, object):
         mock_communicate.return_value = [out, '']
         self.assertTrue(self.ipv6_link.run_iperf())
 
-    @patch('pipedown.Monitor.link.Link.check_routing')
-    @patch('pipedown.Monitor.link.Link.run_iperf')
+    @patch('Monitor.link.Link.check_routing')
+    @patch('Monitor.link.Link.run_iperf')
     def test_health_v4(self, mock_iperf, mock_routing):
         protocol = 'ISIS'
         #Problem with the link.
@@ -84,8 +84,8 @@ class LinkTestCase(unittest.TestCase, object):
         mock_iperf.return_value = True
         self.assertTrue(self.ipv4_link.health(protocol))
 
-    @patch('pipedown.Monitor.link.Link.check_routing')
-    @patch('pipedown.Monitor.link.Link.run_iperf')
+    @patch('Monitor.link.Link.check_routing')
+    @patch('Monitor.link.Link.run_iperf')
     def test_health_v6(self, mock_iperf, mock_routing):
         protocol = 'ISIS'
         #Problem with the link.
@@ -102,7 +102,7 @@ class LinkTestCase(unittest.TestCase, object):
         self.assertTrue(self.ipv6_link.health(protocol))
 
     def test_check_protocol(self):
-        from pipedown.Tools.exceptions import ProtocolError
+        from Tools.exceptions import ProtocolError
         with self.assertRaises(ProtocolError):
             self.ipv4_link._check_protocol('')
             self.ipv4_link._check_protocol('bad')
@@ -110,9 +110,9 @@ class LinkTestCase(unittest.TestCase, object):
         self.assertIsNone(self.ipv4_link._check_protocol('bgp'))
         self.assertIsNone(self.ipv4_link._check_protocol('isis'))
 
-    @patch('pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
+    @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
     def test_check_routing_v4(self, mock_get):
-        from pipedown.Tools.exceptions import ProtocolError
+        from Tools.exceptions import ProtocolError
         with self.assertRaises(ProtocolError):
             result = self.ipv4_link.check_routing('bad')
             mock_get.assert_not_called()
@@ -133,7 +133,7 @@ class LinkTestCase(unittest.TestCase, object):
 
         error_tag = read_file('Examples/Errors/grpc-tag.txt')
         error_msg = read_file('Examples/Errors/grpc-message.txt')
-        from pipedown.Tools.exceptions import GRPCError
+        from Tools.exceptions import GRPCError
         with self.assertRaises(GRPCError):
             err = Mock(message='error string')
             mock_get.return_value = err, output_bad
@@ -147,9 +147,9 @@ class LinkTestCase(unittest.TestCase, object):
             mock_get.return_value = err, output_bad
             self.ipv4_link.check_routing('isis')
 
-    @patch('pipedown.Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
+    @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
     def test_check_routing_v6(self, mock_get):
-        from pipedown.Tools.exceptions import ProtocolError
+        from Tools.exceptions import ProtocolError
         with self.assertRaises(ProtocolError):
             result = self.ipv6_link.check_routing('bad')
             mock_get.assert_not_called()
@@ -168,7 +168,7 @@ class LinkTestCase(unittest.TestCase, object):
         mock_get.return_value = '', output_bad
         self.assertTrue(self.ipv6_link.check_routing('isis'))
 
-        from pipedown.Tools.exceptions import GRPCError
+        from Tools.exceptions import GRPCError
         with self.assertRaises(GRPCError):
             err = Mock(message='error string')
             mock_get.return_value = err, output_bad

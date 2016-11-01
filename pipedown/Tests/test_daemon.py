@@ -2,7 +2,7 @@ import unittest
 import os
 from shutil import copyfile, move
 import mock
-from pipedown import monitor_daemon
+import monitor_daemon
 
 
 class DaemonTestCase(unittest.TestCase):
@@ -53,8 +53,8 @@ class DaemonTestCase(unittest.TestCase):
         with open('router_connected.log') as debug_log:
             log = debug_log.readlines()[0]
             self.assertRegexpMatches(log, 'Config file error:')
-        self.assertEqual(cm.exception.code, 1)
-
+        self.assertEqual(cm.exception.code, 1)  
+  
     def tearDown(self):
         if os.path.isfile(os.path.join(self.location, '../monitortest.config')):
             move(

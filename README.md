@@ -3,12 +3,17 @@
 
 ##### Author: Lisa Roach, Karthik Kumaravel, Quan Le
 ##### Contact: Please use the Issues page to ask questions or open bugs and feature requests.
-
 ## Description
 
 The end goal of the Pipedown is to monitor a CDN router and ensures that it has a stable link to the data center, and if it does not, take it offline by removing its link to the internet.
 
 The application solves the end goal by checking a link that connects back to the data center and ensure that it is healthy. The link is determined to be healthy using [iPerf](https://iperf.fr/) based on parameters such as jitter, bandwidth, packet loss, and dropped packets. If the link is determined to be unhealthy, then the link connecting to the internet would be flushed using [gRPC](http://www.grpc.io/) based on a user defined AS and policy.
+
+#### Version 1.0.1
+
+#### Prerequisites:
+
+Cisco IOS-XR box running version 6.1.2.12i and above.
 
 #### Current Limitations:
 
@@ -47,18 +52,18 @@ Step 5: Create a monitor.config file in the router-connectedness directory and f
 
 ```
 [Name-for-connection]
-destination : ip_address # IP address of where iPerf is running in the data center
-source : ip_address # IP address of your souce link
-protocol : protocol # Protocol you want to monitor [isis, BGP]
-bw_thres : bandwidth # Interger value of Bandwidth in KB that you determine is the minmum value for the link
-jitter_thres : jitter_threshold # Interger value of Jitter Threshold
-pkt_loss : packet loss # Interger value of number of packets allowed to lose
-interval : interval # Interger value in seconds of how often you want the test to run
-grpc_server : ip_address # IP address of the router you are monitoring (Can be local loopback 127.0.0.1)
-grpc_port : port # gRPC port number
-grpc_user : username # Username for AAA authentication
-grpc_pass : password # Password for AAA authentication
-flush_as : flush_as # The AS number of the neighbor group for the internet
+destination : ip_address          # IP address of where iPerf is running in the data center
+source : ip_address               # IP address of your souce link
+protocol : protocol               # Protocol you want to monitor [isis, BGP]
+bw_thres : bandwidth              # Integer value of Bandwidth in KB that you determine is the minmum value for the link
+jitter_thres : jitter_threshold   # Integer value of Jitter Threshold
+pkt_loss : packet loss            # Integer value of number of packets allowed to lose
+interval : interval               # Integer value in seconds of how often you want the test to run
+grpc_server : ip_address          # IP address of the router you are monitoring (Can be local loopback 127.0.0.1)
+grpc_port : port                  # gRPC port number
+grpc_user : username              # Username for AAA authentication
+grpc_pass : password              # Password for AAA authentication
+flush_as : flush_as               # The AS number of the neighbor group for the internet
 drop_policy_name: drop_policy_name # The policy name that you want when the flush is activated.
 ```
 Example:
@@ -102,10 +107,10 @@ Run the monitor daemon. It uses multithreading so a instance will spawn for ever
 
 Do this at the top-level directory:
 
-```python -m unittest discover Tests```
+```python -m unittest discover pipedown.Tests```
 
 For test_bgp_flush.py
-``` python -m unittest Tests.test_bgp_flush.FlushBGPTestCase```
+``` python -m unittest pipedown.Tests.test_bgp_flush.FlushBGPTestCase```
 
 ### Integration Tests
 
