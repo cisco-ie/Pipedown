@@ -6,7 +6,7 @@
 ### Overview
 This environment is intended to act as a testbed for playing with Pipedown. This Vagrant uses two IOS-XRv images, two virtual box VMs, and an Ubuntu/trusty64 container on one of the IOS-XRv images. The plumbing and demo functions are brought up through bash scripts to allow you to use the Router-Connectedness application without hassle, and demo it to others.
 
-![Router Diagram](Router-Connectedness.png)
+![Router Diagram](pipedown.png)
 
 ### Set Up
 
