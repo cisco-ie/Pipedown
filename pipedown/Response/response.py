@@ -30,13 +30,16 @@ LOGGER = logging.getLogger()
 
 
 def cisco_update(grpc_client, neighbor_as, new_policy_name):
-    """Initiate the GRPC client to perform the
-   neighbor removal and commits, using Cisco YANG models.
+    """Initiate the GRPC client to perform the neighbor removal and commits, 
+    using Cisco YANG models.
 
-    :param grpc_client: the initiated GRPC client.
-    :param neighbor_as: List of neighbor AS numbers.
-    :param new_policy_name: Name of the policy file to be used when
-                             updating a neighbor.
+    Args:
+        grpc_client (CiscoGRPCClient): the initiated GRPC client.
+        neighbor_as (list): List of neighbor AS numbers.
+        new_policy_name (str): Name of the new policy.
+
+    Returns:
+        str: Updated neighbors' IPs and the policy that changed.
     """
     bgp_config_template = '{"Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {"instance": [{"instance-name": "default","instance-as": [{"four-byte-as": [{"default-vrf": {"bgp-entity": {"neighbors": {"neighbor": [{"neighbor-afs": {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}'
     # Get the BGP config.
@@ -79,10 +82,14 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
    neighbor removal and commits, using Cisco YANG models.
 
-    :param grpc_client: the initiated GRPC client.
-    :param neighbor_as: List of neighbor AS numbers.
-    :param new_policy_name: Name of the policy file to be used when
-                             updating a neighbor.
+   Args:
+        grpc_client (CiscoGRPCClient): the initiated GRPC client.
+        neighbor_as (list): List of neighbor AS numbers.
+        new_policy_name (str): Name of the new policy.
+
+    Returns:
+        str: Updated neighbors' IPs and the policy that changed.
+
     """
     bgp_config_template = '{"openconfig-bgp:bgp": {"neighbors": [null]}}'
     # Get the BGP config.
@@ -119,7 +126,15 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
 
 
 def get_bgp_config(grpc_client, bgp_config_template):
-    """Use gRPC to grab the current BGP configuration on the box."""
+    """Use gRPC to grab the current BGP configuration on the box.
+    Args:
+        grpc_client (CiscoGRPCClient): the initiated GRPC client.
+        bgp_config_template (JSON str): Unpopulated YANG model to be filled.
+
+    Returns:
+        bgp_config (str): Populated YANG model.
+
+    """
     try:
         err, bgp_config = grpc_client.getconfig(bgp_config_template)
         if err:
@@ -135,7 +150,16 @@ def get_bgp_config(grpc_client, bgp_config_template):
         raise
 
 def apply_policy(grpc_client, bgp_config):
-    """Apply the new BGP policy by using gRPC."""
+    """Apply the new BGP policy by using gRPC.
+    
+    Args:
+        grpc_client (CiscoGRPCClient): the initiated GRPC client.
+        bgp_config (dict): Updated YANG model with new policy.
+
+    Returns:
+        None
+
+    """
     LOGGER.info('Changing the bgp neighbors...')
     bgp_config = json.dumps(bgp_config)
     try:
