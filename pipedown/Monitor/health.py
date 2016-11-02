@@ -57,7 +57,7 @@ def run_iperf(link, bw_thres=400, jitter_thres=10, pkt_loss=2,
     try:
         transferred_bytes = float(out.splitlines()[2].split(',')[7])
     except IndexError:
-        LOGGER.error('Problem with the iPerf output: ', out)
+        LOGGER.error('Problem with the iPerf output: %s', out)
     bps = (transferred_bytes * 8) / float(interval)
     bandwidth = bps/1024.0
     jitter = out.splitlines()[2].split(',')[9]

@@ -96,11 +96,12 @@ class Link(object):
 
     @protocols.setter
     def protocols(self, protocols):
+        self._protocols = []
         try:
             for protocol in protocols:
-                self._check_protocol(protocol)
-            #If they are valid protocols, set them.
-            self._protocols = [x.upper() for x in protocols]
+                self._check_protocol(protocol.upper())
+                #If they are valid protocols, set them.
+                self._protocols.append(protocol.upper())
         except ProtocolError as e:
             LOGGER.critical(e.message)
             raise
@@ -198,7 +199,7 @@ class Link(object):
                 'EIGRP',
                 'LOCAL',
             ]
-            if not protocol.upper() in protocols:
+            if not protocol in protocols:
                 raise ProtocolError(protocol)
         else:
             raise ProtocolError(protocol)
