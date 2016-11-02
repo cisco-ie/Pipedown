@@ -2,10 +2,12 @@ import unittest
 import os
 from shutil import copyfile, move
 import mock
-from pipedown import monitor_daemon
+
+import monitor_daemon
+import testmixin
 
 
-class DaemonTestCase(unittest.TestCase):
+class DaemonTestCase(testmixin.TestMixIn, object):
     def setUp(self):
         self.location = os.path.dirname(os.path.realpath(__file__))
         if os.path.isfile(os.path.join(self.location, '../monitor.config')):
