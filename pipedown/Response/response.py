@@ -16,7 +16,6 @@
 Removes all BGP neighbors of a given external AS using GRPC to send and commit
 configurations in IOS-XR.
 """
-from Tools.exceptions import GRPCError
 
 import logging
 import json
@@ -26,7 +25,7 @@ from email.mime.text import MIMEText
 import requests
 from grpc.framework.interfaces.face.face import AbortionError
 
-
+from Tools.exceptions import GRPCError
 
 LOGGER = logging.getLogger()
 

@@ -31,7 +31,6 @@ import sys
 from netaddr import IPAddress
 from netaddr.core import AddrFormatError
 
-
 LOGGER = logging.getLogger()
 
 def _not_valid():

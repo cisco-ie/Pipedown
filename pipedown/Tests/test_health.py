@@ -2,6 +2,8 @@ import unittest
 import os
 import logging
 from mock import patch, Mock
+
+import testmixin
 from Monitor.link import Link
 from Monitor import health
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
