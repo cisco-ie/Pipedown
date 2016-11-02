@@ -99,14 +99,14 @@ class Link(object):
         try:
             for protocol in protocols:
                 self._check_protocol(protocol)
-            #If it they are valid protocols, set them.
+            #If they are valid protocols, set them.
             self._protocols = [x.upper() for x in protocols]
         except ProtocolError as e:
             LOGGER.critical(e.message)
             raise
         except TypeError as e:
             LOGGER.critical(e)
-
+            raise
 
     def __repr__(self):
         return '{}(dest = {}, interface = {}, protocols = {})'.format(
@@ -185,6 +185,7 @@ class Link(object):
         if isinstance(protocol, str):
             protocols = [
                 'ISIS',
+                'IS-IS'
                 'BGP',
                 'MOBILE',
                 'SUBSCRIBER',
