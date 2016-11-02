@@ -28,7 +28,7 @@ from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
 from Monitor.health import health
 from Response import response
-from Tools.exceptions import GRPCError
+from Tools.exceptions import GRPCError, ProtocolError
 
 LOGGER = log.log()
 
@@ -74,7 +74,10 @@ def monitor(section, lock, health_dict):
     while True:
         #Checking link to data center.
         LOGGER.info('Checking link health of %s', source)
-        link = Link(destination, source, protocols)
+        try:
+            link = Link(destination, source, protocols)
+        except ProtocolError:
+            LOGGER.error('One of the protocols is invalid: %s', protocols)
         try:
             result = health(link, client, bw_thres, jitter_thres, pkt_loss, interval)
         except (GRPCError, AbortionError):
