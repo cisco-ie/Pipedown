@@ -52,10 +52,10 @@ class Link(object):
     :type interface: str
     :type protocols: list
     """
-    def __init__(self, destination, interface, protocols):
-        self._interface = interface
-        self._dest = destination
-        self._protocols = protocols
+    def __init__(self, interface):
+        self._interface = None
+        self._dest = None
+        self._protocols = None
         #Detect IPv4 or IPv6 for interface.
         if ':' in interface:
             self.version = 6
