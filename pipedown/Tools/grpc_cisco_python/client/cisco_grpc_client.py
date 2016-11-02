@@ -14,7 +14,7 @@
 
 import grpc
 from grpc.beta import implementations
-import ems_grpc_pb2
+from Tools.grpc_cisco_python.client import ems_grpc_pb2
 
 class CiscoGRPCClient(object):
     def __init__(self, host, port, timeout, user, password, creds=None, options=None):
