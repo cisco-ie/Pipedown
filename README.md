@@ -100,7 +100,7 @@ Run the monitor daemon. It uses multithreading so a instance will spawn for ever
 
 ### Unit Tests
 
-Do this at the top-level directory:
+Do this at the ~/Pipedown/pipedown directory:
 
 ```python -m unittest discover Tests```
 
