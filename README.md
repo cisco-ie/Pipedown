@@ -21,7 +21,7 @@ Currently for monitoring multiple links, each link needs to have its own source 
 
 ### Vagrant
 
-For an easy Pipedown-in-a-box demonstration, please refer to the [vagrant](https://github.com/cisco-ie/Pipedown/tree/master/vagrant) directory. Here you will be able to download a fully functional vagrant environment that has Router-Connectedness up and running already.
+For an easy Pipedown-in-a-box demonstration, please refer to the [vagrant](https://github.com/cisco-ie/Pipedown/tree/master/vagrant) directory. Here you will be able to download a fully functional vagrant environment that has Pipedown up and running already. This demonstration uses concepts that can be better understood by consulting the IOS XR tutorials: https://xrdocs.github.io/application-hosting/tutorials/.
 
 ## Usage
 
