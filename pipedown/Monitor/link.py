@@ -53,9 +53,9 @@ class Link(object):
     :type protocols: list
     """
     def __init__(self, destination, interface, protocols):
-        self._interface = interface
-        self._dest = destination
-        self._protocols = protocols
+        self.interface = interface
+        self.dest = destination
+        self.protocols = protocols
         #Detect IPv4 or IPv6 for interface.
         if ':' in interface:
             self.version = 6
