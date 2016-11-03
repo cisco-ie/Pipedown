@@ -7,6 +7,7 @@ import json
 from Response import response
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Tools.exceptions import GRPCError
+import testmixin
 
 logging.basicConfig(level=logging.DEBUG)
 
