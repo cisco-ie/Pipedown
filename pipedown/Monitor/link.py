@@ -51,6 +51,7 @@ class Link(object):
     :type destination: str
     :type interface: str
     :type protocols: list
+
     """
     def __init__(self, destination, interface, protocols):
         self.interface = interface
@@ -82,6 +83,7 @@ class Link(object):
 
     @destination.setter
     def destination(self, destination):
+        """Check if the IPs are in correct format."""
         try:
             #Check validity of interface address.
             IPAddress(destination)
@@ -96,12 +98,13 @@ class Link(object):
 
     @protocols.setter
     def protocols(self, protocols):
+        """Only set the protocols if they are valid."""
         self._protocols = []
         try:
             for protocol in protocols:
-                self._check_protocol(protocol.upper())
+                self._check_protocol(protocol.lower())
                 #If they are valid protocols, set them.
-                self.protocols.append(protocol.upper())
+                self.protocols.append(protocol.lower())
         except ProtocolError as e:
             LOGGER.critical(e.message)
             raise
@@ -143,10 +146,11 @@ class Link(object):
         >>> l2 = Link('10.1.1.2', '10.1.1.1', ['BGP', 'OSPF'])
         >>> l == l2
         False
+
         """
         return (isinstance(other, Link)
                 and set(self._protocols) == set(other.protocols)
-                and self.dest == other.dest
+                and self.destination == other.dest
                 and self.interface == other.interface
                )
 
@@ -185,19 +189,19 @@ class Link(object):
         """
         if isinstance(protocol, str):
             protocols = [
-                'ISIS',
-                'IS-IS',
-                'BGP',
-                'MOBILE',
-                'SUBSCRIBER',
-                'CONNECTED',
-                'DAGR',
-                'RIP',
-                'OSPF',
-                'STATIC',
-                'RPL',
-                'EIGRP',
-                'LOCAL',
+                'isis',
+                'is-is',
+                'bgp',
+                'mobile',
+                'subscriber',
+                'connected',
+                'dagr',
+                'rip',
+                'ospf',
+                'static',
+                'rpl',
+                'eigrp',
+                'local',
             ]
             if not protocol in protocols:
                 raise ProtocolError(protocol)
