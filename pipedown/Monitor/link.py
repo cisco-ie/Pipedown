@@ -54,7 +54,7 @@ class Link(object):
     """
     def __init__(self, destination, interface, protocols):
         self.interface = interface
-        self.dest = destination
+        self.destination = destination
         self.protocols = protocols
         #Detect IPv4 or IPv6 for interface.
         if ':' in interface:
@@ -64,39 +64,39 @@ class Link(object):
 
     @property
     def interface(self):
-        return self.interface
+        return self._interface
 
     @interface.setter
     def interface(self, interface):
         try:
             #Check validity of interface address.
             IPAddress(interface)
-            self.interface = interface
+            self._interface = interface
         except (AddrFormatError, TypeError) as e:
             LOGGER.critical(e)
             raise
 
     @property
     def destination(self):
-        return self.dest
+        return self._dest
 
     @destination.setter
     def destination(self, destination):
         try:
             #Check validity of interface address.
             IPAddress(destination)
-            self.dest = destination
+            self._dest = destination
         except (AddrFormatError, TypeError) as e:
             LOGGER.critical(e)
             raise
 
     @property
     def protocols(self):
-        return self.protocols
+        return self._protocols
 
     @protocols.setter
     def protocols(self, protocols):
-        self.protocols = []
+        self._protocols = []
         try:
             for protocol in protocols:
                 self._check_protocol(protocol.upper())
@@ -110,9 +110,9 @@ class Link(object):
             raise
 
     def __repr__(self):
-        return '{}(dest = {}, interface = {}, protocols = {})'.format(
+        return '{}(destination = {}, interface = {}, protocols = {})'.format(
             self.__class__.__name__,
-            self.dest,
+            self.destination,
             self.interface,
             self.protocols
         )
@@ -122,7 +122,7 @@ class Link(object):
         'Host Router Interface IP: {},'\
         'Link Protocols to Check: {})').format(
             self.__class__.__name__,
-            self.dest,
+            self.destination,
             self.interface,
             [x.upper() for x in self.protocols]
         )
@@ -145,7 +145,7 @@ class Link(object):
         False
         """
         return (isinstance(other, Link)
-                and set(self.protocols) == set(other.protocols)
+                and set(self._protocols) == set(other.protocols)
                 and self.dest == other.dest
                 and self.interface == other.interface
                )
@@ -186,7 +186,7 @@ class Link(object):
         if isinstance(protocol, str):
             protocols = [
                 'ISIS',
-                'IS-IS'
+                'IS-IS',
                 'BGP',
                 'MOBILE',
                 'SUBSCRIBER',
