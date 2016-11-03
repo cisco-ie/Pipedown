@@ -21,7 +21,7 @@ from Tools.exceptions import GRPCError
 
 LOGGER = logging.getLogger()
 
-def run_iperf(link, bw_thres=400, jitter_thres=10, pkt_loss=2,
+def run_iperf(link, bw_thres=400, jitter_thres=10, pkt_loss_thres=2,
               interval=5):
     """Run iPerf to check the health of the link.
 
@@ -66,7 +66,7 @@ def run_iperf(link, bw_thres=400, jitter_thres=10, pkt_loss=2,
         [
             float(bandwidth) < float(bw_thres),
             float(jitter) > float(jitter_thres),
-            float(pkt_loss) > float(pkt_loss)
+            float(pkt_loss) > float(pkt_loss_thres)
         ]
     )
     # False is good! iPerf link sees no problems.
