@@ -1,14 +1,11 @@
 import unittest
 import os
-import logging
 from mock import patch, Mock
 
-import testmixin
+import log
 from Monitor.link import Link
 from Monitor import health
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
-
-logging.basicConfig(level=logging.DEBUG)
 
 def read_file(filename):
     """Takes a filename and concatenates it with the location of this file.
@@ -23,7 +20,7 @@ def read_file(filename):
     with open(os.path.join(location, filename)) as f:
         return f.read()
 
-class HealthTestCase(testmixin.TestMixIn, object):
+class HealthTestCase(unittest.TestCase, object):
     @staticmethod
     def read_file(filepath):
         location = os.path.dirname(os.path.realpath(__file__))
@@ -40,6 +37,8 @@ class HealthTestCase(testmixin.TestMixIn, object):
 
     @patch('Monitor.health.subprocess.Popen.communicate')
     def test_iperf_v4(self, mock_communicate):
+        import pdb
+        pdb.set_trace()
         err = 'read failed: Connection refused\n'
         mock_communicate.return_value = ['', err]
         response = health.run_iperf(self.ipv4_link, 10, 20, 5, 5)

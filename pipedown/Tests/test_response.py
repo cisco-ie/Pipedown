@@ -1,15 +1,12 @@
 import unittest
-import logging
 import os
-from mock import patch
 import json
+from mock import patch
+
 
 from Response import response
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Tools.exceptions import GRPCError
-import testmixin
-
-logging.basicConfig(level=logging.DEBUG)
 
 def read_file(filename):
     """Takes a filename and concatenates it with the location of this file.
@@ -20,10 +17,9 @@ def read_file(filename):
     with open(os.path.join(location, filename)) as f:
         return f.read()
 
-class ResponseTestCase(testmixin.TestMixIn, object):
+class ResponseTestCase(unittest.TestCase, object):
     @classmethod
-    @patch('Monitor.health.logging.getLogger')
-    def setUpClass(cls, mock_logging):
+    def setUpClass(cls):
         cls.grpc_client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'test', 'test')
         cls.neighbor_as = [65000]
         cls.policy_name = 'drop'

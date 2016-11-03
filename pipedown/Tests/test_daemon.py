@@ -4,10 +4,9 @@ from shutil import copyfile, move
 import mock
 
 import monitor_daemon
-import testmixin
 
 
-class DaemonTestCase(testmixin.TestMixIn, object):
+class DaemonTestCase(unittest.TestCase, object):
     def setUp(self):
         self.location = os.path.dirname(os.path.realpath(__file__))
         if os.path.isfile(os.path.join(self.location, '../monitor.config')):
