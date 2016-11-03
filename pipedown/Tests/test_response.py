@@ -3,7 +3,6 @@ import os
 import json
 from mock import patch
 
-
 from Response import response
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Tools.exceptions import GRPCError
