@@ -105,7 +105,7 @@ class Link(object):
                 self._check_protocol(protocol.lower())
                 #If it is is-is remove the '-'
                 if '-' in protocol:
-                    protocol = protocol.remove('-')
+                    protocol = protocol.replace('-', '')
                 #If they are valid protocols, set them.
                 self.protocols.append(protocol.lower())
         except ProtocolError as e:
