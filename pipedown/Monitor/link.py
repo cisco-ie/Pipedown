@@ -64,44 +64,44 @@ class Link(object):
 
     @property
     def interface(self):
-        return self._interface
+        return self.interface
 
     @interface.setter
     def interface(self, interface):
         try:
             #Check validity of interface address.
             IPAddress(interface)
-            self._interface = interface
+            self.interface = interface
         except (AddrFormatError, TypeError) as e:
             LOGGER.critical(e)
             raise
 
     @property
     def destination(self):
-        return self._dest
+        return self.dest
 
     @destination.setter
     def destination(self, destination):
         try:
             #Check validity of interface address.
             IPAddress(destination)
-            self._dest = destination
+            self.dest = destination
         except (AddrFormatError, TypeError) as e:
             LOGGER.critical(e)
             raise
 
     @property
     def protocols(self):
-        return self._protocols
+        return self.protocols
 
     @protocols.setter
     def protocols(self, protocols):
-        self._protocols = []
+        self.protocols = []
         try:
             for protocol in protocols:
                 self._check_protocol(protocol.upper())
                 #If they are valid protocols, set them.
-                self._protocols.append(protocol.upper())
+                self.protocols.append(protocol.upper())
         except ProtocolError as e:
             LOGGER.critical(e.message)
             raise
@@ -112,9 +112,9 @@ class Link(object):
     def __repr__(self):
         return '{}(dest = {}, interface = {}, protocols = {})'.format(
             self.__class__.__name__,
-            self._dest,
-            self._interface,
-            self._protocols
+            self.dest,
+            self.interface,
+            self.protocols
         )
 
     def __str__(self):
@@ -122,9 +122,9 @@ class Link(object):
         'Host Router Interface IP: {},'\
         'Link Protocols to Check: {})').format(
             self.__class__.__name__,
-            self._dest,
-            self._interface,
-            [x.upper() for x in self._protocols]
+            self.dest,
+            self.interface,
+            [x.upper() for x in self.protocols]
         )
 
     def __eq__(self, other):
@@ -145,9 +145,9 @@ class Link(object):
         False
         """
         return (isinstance(other, Link)
-                and set(self._protocols) == set(other.protocols)
-                and self._dest == other.dest
-                and self._interface == other.interface
+                and set(self.protocols) == set(other.protocols)
+                and self.dest == other.dest
+                and self.interface == other.interface
                )
 
     def __ne__(self, other):
