@@ -105,12 +105,11 @@ Run the monitor daemon. It uses multithreading so a instance will spawn for ever
 
 ### Unit Tests
 
-Do this at the top-level directory:
+Do this at the  Pipedown/pipedown directory:
 
-```python -m unittest discover pipedown.Tests```
+```python -m unittest discover Tests```
 
-For test_bgp_flush.py
-``` python -m unittest pipedown.Tests.test_bgp_flush.FlushBGPTestCase```
+Note: iPerf must be installed, or two tests will fail. If you do not want to install iPerf just ignore the error messages.
 
 ### Integration Tests
 
