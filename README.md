@@ -104,6 +104,8 @@ Do this at the ~/Pipedown/pipedown directory:
 
 ```python -m unittest discover Tests```
 
+**Note**: iPerf must be installed, or two tests will fail. If you do not want to install iPerf just ignore the error messages.
+
 For test_bgp_flush.py
 ``` python -m unittest Tests.test_bgp_flush.FlushBGPTestCase```
 
