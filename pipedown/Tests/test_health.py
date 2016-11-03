@@ -37,8 +37,6 @@ class HealthTestCase(unittest.TestCase, object):
 
     @patch('Monitor.health.subprocess.Popen.communicate')
     def test_iperf_v4(self, mock_communicate):
-        import pdb
-        pdb.set_trace()
         err = 'read failed: Connection refused\n'
         mock_communicate.return_value = ['', err]
         response = health.run_iperf(self.ipv4_link, 10, 20, 5, 5)
