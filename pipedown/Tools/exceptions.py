@@ -13,7 +13,6 @@
 # the License.
 
 """Custom exceptions for Pipedown."""
-import json
 
 class GRPCError(Exception):
     """Raised when there is an error returned by the GRPC Client."""
@@ -22,9 +21,9 @@ class GRPCError(Exception):
         try:
             message = self.err['cisco-grpc:errors']['error']
             if 'error-message' in message:
-                self.message = 'A gRPC error occurred: %s' % message['error-message']
+                self.message = 'A gRPC error occurred: %s.' % message['error-message']
             elif 'error-tag' in message:
-                self.message = 'A gRPC error occurred: %s' % message['error-tag']
+                self.message = 'A gRPC error occurred: %s.' % message['error-tag']
         except TypeError:  #err is a str instead of a JSON object
             self.message = err
 

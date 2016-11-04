@@ -105,11 +105,14 @@ Run the monitor daemon. It uses multithreading so a instance will spawn for ever
 
 ### Unit Tests
 
-Do this at the  Pipedown/pipedown directory:
+Do this at the ~/Pipedown/pipedown directory:
+
 
 ```python -m unittest discover Tests```
 
-Note: iPerf must be installed, or two tests will fail. If you do not want to install iPerf just ignore the error messages.
+
+**Note**: iPerf must be installed, or two tests will fail. If you do not want to install iPerf just ignore the error messages.
+
 
 ### Integration Tests
 

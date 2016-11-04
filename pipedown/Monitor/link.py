@@ -12,59 +12,165 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-"""This module contains the Link class"""
+"""This module contains the Link class.
 
-import subprocess
+The link includes the destination router IP address, the IP address of the
+interface on the host router (the router this program is running on), and the
+list of protocols that should be tested on the interface. Multiple protocols are
+accepted in the form of a list.
+
+Works in python 2.7 and Python 3+.
+
+Author: Lisa Roach
+"""
+
+from Tools.exceptions import ProtocolError
+
 import logging
 import sys
-from grpc.framework.interfaces.face.face import AbortionError
+from netaddr import IPAddress
+from netaddr.core import AddrFormatError
 
-from Tools.exceptions import GRPCError, ProtocolError
+LOGGER = logging.getLogger()
+
+def _not_valid():
+    if sys.version_info[0] >= 3:
+        return NotImplemented
+    else:
+        print('Link object unorderable.')
 
 class Link(object):
     """A class for monitoring interfaces with iPerf.
-    :param destination: The iPerf destination ip address.
-    :param interface: The outgoing interface.
-    :param grpc_client: gRPC Client object.
-    :param bw_thres: The bandwidth threshold. Default to 400 KBits.
-    :param jitter_thres: Jitter threshold. Default 10ms.
-    :param pkt_loss: Number of acceptable lost packets.
-    :param interval: The interval time in seconds between periodic bandwidth,
-    jitter, and loss reports.
+    Both IPv6 and IPv4 are supported.
+    Raises errors if IP address is not in valid format or protocol is not valid.
+
+    :param destination: The destination IP of the peer router port.
+    :param interface: The outgoing interface IP address.
+    :param protocols: The protocols of the link that should be checked.
 
     :type destination: str
-    :type interface: sr
-    :type grpc_client: gRPC Client object
-    :type bw_thres: int
-    :type jitter_thres: int
-    :type pkt_loss: int
-    :type interval: int
+    :type interface: str
+    :type protocols: list
+
     """
-    def __init__(self, destination, interface, grpc_client, bw_thres=400, jitter_thres=10,
-                 pkt_loss=2, interval=10):
-        self.bw_thres = bw_thres
-        self.jitter_thres = jitter_thres
-        self.pkt_loss = pkt_loss
-        self.interval = interval
+    def __init__(self, destination, interface, protocols):
         self.interface = interface
         self.destination = destination
-        self.grpc_client = grpc_client
-        self.logger = logging.getLogger()
+        self.protocols = protocols
+        #Detect IPv4 or IPv6 for interface.
+        if ':' in interface:
+            self.version = 6
+        else:
+            self.version = 4
+
+    @property
+    def interface(self):
+        return self._interface
+
+    @interface.setter
+    def interface(self, interface):
+        try:
+            #Check validity of interface address.
+            IPAddress(interface)
+            self._interface = interface
+        except (AddrFormatError, TypeError) as e:
+            LOGGER.critical(e)
+            raise
+
+    @property
+    def destination(self):
+        return self._dest
+
+    @destination.setter
+    def destination(self, destination):
+        """Check if the IPs are in correct format."""
+        try:
+            #Check validity of interface address.
+            IPAddress(destination)
+            self._dest = destination
+        except (AddrFormatError, TypeError) as e:
+            LOGGER.critical(e)
+            raise
+
+    @property
+    def protocols(self):
+        return self._protocols
+
+    @protocols.setter
+    def protocols(self, protocols):
+        """Only set the protocols if they are valid."""
+        self._protocols = []
+        try:
+            for protocol in protocols:
+                self._check_protocol(protocol.lower())
+                #If it is is-is remove the '-'
+                if '-' in protocol:
+                    protocol = protocol.replace('-', '')
+                #If they are valid protocols, set them.
+                self.protocols.append(protocol.lower())
+        except ProtocolError as e:
+            LOGGER.critical(e.message)
+            raise
+        except TypeError as e:
+            LOGGER.critical(e)
+            raise
 
     def __repr__(self):
-        return '{}(destination = {}, Interface = {}, gRPC_Client = {}, ' \
-                'Bandwidth_Threshold = {}, Jitter_Threshold = {}, ' \
-                'Packet_Loss = {}, Interval = {}' \
-                ')'.format(
-                    self.__class__.__name__,
-                    self.destination,
-                    self.interface,
-                    self.grpc_client,
-                    self.bw_thres,
-                    self.jitter_thres,
-                    self.pkt_loss,
-                    self.interval
-                    )
+        return '{}(destination = {}, interface = {}, protocols = {})'.format(
+            self.__class__.__name__,
+            self.destination,
+            self.interface,
+            self.protocols
+        )
+
+    def __str__(self):
+        return ('{} Object(Destination IP: {},'\
+        'Host Router Interface IP: {},'\
+        'Link Protocols to Check: {})').format(
+            self.__class__.__name__,
+            self.destination,
+            self.interface,
+            [x.upper() for x in self.protocols]
+        )
+
+    def __eq__(self, other):
+        """Compares the equality of two Link objects. Returns a bool.
+        Must have the same protocols listed, order and case don't matter.
+
+        >>> l = Link('10.1.1.2', '10.1.1.1', ['BGP', 'ospf', 'ISIS'])
+        >>> l2 = Link('10.1.1.2', '10.1.1.1', ['BGP', 'ISIS', 'OSPF'])
+        >>> l == l2
+        True
+        >>> l = Link('10.1.1.3', '10.1.1.1', ['BGP', 'ospf', 'ISIS'])
+        >>> l2 = Link('10.1.1.2', '10.1.1.1', ['BGP', 'ISIS', 'OSPF'])
+        >>> l == l2
+        False
+        >>> l = Link('10.1.1.2', '10.1.1.1', ['BGP', 'ospf', 'ISIS'])
+        >>> l2 = Link('10.1.1.2', '10.1.1.1', ['BGP', 'OSPF'])
+        >>> l == l2
+        False
+
+        """
+        return (isinstance(other, Link)
+                and set(self._protocols) == set(other.protocols)
+                and self.destination == other.dest
+                and self.interface == other.interface
+               )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __gt__(self, other):
+        return _not_valid()
+
+    def __lt__(self, other):
+        return _not_valid()
+
+    def __ge__(self, other):
+        return _not_valid()
+
+    def __le__(self, other):
+        return _not_valid()
 
     @staticmethod
     def _check_protocol(protocol):
@@ -86,113 +192,22 @@ class Link(object):
         """
         if isinstance(protocol, str):
             protocols = [
-                'ISIS',
-                'BGP',
-                'MOBILE',
-                'SUBSCRIBER',
-                'CONNECTED',
-                'DAGR',
-                'RIP',
-                'OSPF',
-                'STATIC',
-                'RPL',
-                'EIGRP',
-                'LOCAL',
+                'isis',
+                'is-is',
+                'bgp',
+                'mobile',
+                'subscriber',
+                'connected',
+                'dagr',
+                'rip',
+                'ospf',
+                'static',
+                'rpl',
+                'eigrp',
+                'local',
             ]
-            if not protocol.upper() in protocols:
+            if not protocol in protocols:
                 raise ProtocolError(protocol)
         else:
             raise ProtocolError(protocol)
 
-    def run_iperf(self):
-        """Run iPerf to check the health of the link.
-        Returns False if no problems are detected, returns True if there
-        are issues on the link.
-        """
-        cmd = "iperf -c %s -B %s -t %d -i %d -u -y C" % \
-        (self.destination, self.interface, self.interval, self.interval)
-        # Perform the network monitoring task.
-        process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-        out, err = process.communicate()
-        if err:
-            if 'Connection refused' in err:
-                self.logger.critical(
-                    'Connection to iPerf destination refused. Assuming link is down.'
-                    )
-            return True
-        # Parse the output.
-        transferred_bytes = float(out.splitlines()[2].split(',')[7])
-        bps = (transferred_bytes * 8) / float(self.interval)
-        bandwidth = bps/1024.0
-        jitter = out.splitlines()[2].split(',')[9]
-        pkt_loss = out.splitlines()[2].split(',')[12]
-        verdict = any(
-            [
-                float(bandwidth) < float(self.bw_thres),
-                float(jitter) > float(self.jitter_thres),
-                float(pkt_loss) > float(self.pkt_loss)
-            ]
-        )
-        # False is good! iPerf link sees no problems.
-        # True is bad, there are problems on the link.
-        return verdict
-
-    def check_routing(self, protocol):
-        """Returns False (no error) if there is a route in the RIB, True if not.
-
-        Checks if there is a route to the neighbor from the link.interface
-        of the protocol given (typically ISIS or BGP).
-
-        Uses gRPC to read the routing table, checking specifically that the
-        interface has a route (and of the type specified).
-
-        :param protocol: ISIS or BGP
-        :type protocol: str
-        """
-        try:
-            # If the protocol is wrong, raise an error.
-            self._check_protocol(protocol)
-        except ProtocolError as e:
-            self.logger.error(e.message)
-            raise
-
-        path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
-        version = 4
-        ipv6 = ''
-        if ':' in self.destination: # Checks if it is an IPv6 link.
-            version = 6
-            ipv6 = 'ipv6-'
-        path = path.format(v=version, ipv6=ipv6, link=self.destination)
-        try:
-            err, output = self.grpc_client.getoper(path)
-            if err:
-                raise GRPCError(err)
-            #On GRPCError, protocol not found, or not active, return True.
-            return protocol not in output or '"active": true' not in output
-        except GRPCError as e:
-            self.logger.error(e.message)
-            raise
-        except AbortionError:
-            self.logger.critical(
-                'Unable to connect to local box, check your gRPC destination.'
-                )
-            sys.exit(1)
-
-    def health(self, protocol):
-        """Check the health of the link, returns True if there is an error,
-        False if no error.
-        Runs both check_routing and run_iperf.
-
-        :param protocol: Routing protocol (ex. IS-IS or BGP)
-        :param client: gRPC Client object
-
-        :type protocol: str
-        :type client: gRPC Client object
-        """
-        routing = self.check_routing(protocol)
-        if not routing: #If there is NOT an error in routing.
-            iperf = self.run_iperf()
-            return iperf
-        else:
-            return routing

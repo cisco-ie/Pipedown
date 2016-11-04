@@ -2,10 +2,15 @@ import unittest
 import os
 from shutil import copyfile, move
 import mock
+<<<<<<< HEAD
+=======
+import monitor_daemon
+>>>>>>> master
+
 import monitor_daemon
 
 
-class DaemonTestCase(unittest.TestCase):
+class DaemonTestCase(unittest.TestCase, object):
     def setUp(self):
         self.location = os.path.dirname(os.path.realpath(__file__))
         if os.path.isfile(os.path.join(self.location, '../monitor.config')):
