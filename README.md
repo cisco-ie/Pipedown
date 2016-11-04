@@ -1,12 +1,13 @@
 # Pipedown
 ### Router Connectedness Application
 
-Pipedown 1.2.0
+##### Pipedown 1.2.0
 
-Released November 3, 2016
+##### Released November 3, 2016
 
 ##### Author: Lisa Roach, Karthik Kumaravel, Quan Le
 ##### Contact: Please use the Issues page to ask questions or open bugs and feature requests.
+
 ## Description
 
 The end goal of the Pipedown is to monitor a CDN router and ensures that it has a stable link to the data center, and if it does not, take it offline by removing its link to the internet.
