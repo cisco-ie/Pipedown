@@ -120,33 +120,37 @@ class ResponseTestCase(unittest.TestCase, object):
             )
 
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getconfig')
-    def test_get_bgp_config(self, get_mock):
-        get_mock.return_value = '', self.cisco_config
+    @patch('Response.response.LOGGER')
+    def test_get_bgp_config(self, mock_logger, mock_get):
+        mock_get.return_value = '', self.cisco_config
         value = response.get_bgp_config(self.grpc_client, self.cisco_template)
         self.assertTrue(value, self.cisco_config)
-        get_mock.assert_called_with(self.cisco_template)
+        mock_get.assert_called_with(self.cisco_template)
 
         with self.assertRaises(GRPCError):
             err = read_file('Examples/Errors/grpc-tag.txt')
-            get_mock.return_value = err, ''
+            mock_get.return_value = err, ''
             response.get_bgp_config(self.grpc_client, self.cisco_template)
+            self.assertTrue(mock_logger.error.called)
 
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.mergeconfig')
-    def test_apply_policy(self, merge_mock):
+    @patch('Response.response.LOGGER')
+    def test_apply_policy(self, mock_logger, mock_merge):
         class A():
             def __init__(self, err, other):
                 self.errors = err
                 self.other = other
 
-        merge_mock.return_value = A('', 'No error here!')
+        mock_merge.return_value = A('', 'No error here!')
         response.apply_policy(self.grpc_client, self.cisco_config)
-        merge_mock.assert_called_with(json.dumps(self.cisco_config))
+        self.assertTrue(mock_logger.info.called)
+        mock_merge.assert_called_with(json.dumps(self.cisco_config))
 
         with self.assertRaises(GRPCError):
             err = read_file('Examples/Errors/grpc-tag.txt')
-            merge_mock.return_value = A(err, '')
+            mock_merge.return_value = A(err, '')
             response.apply_policy(self.grpc_client, self.cisco_config)
-
+            self.assertTrue(mock_logger.error.called)
 
 if __name__ == '__main__':
     unittest.main()
