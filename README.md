@@ -28,7 +28,7 @@ For an easy Pipedown-in-a-box demonstration, please refer to the [vagrant](https
 
 ## Usage
 
-Step 1: Clone this repo and cd into router-connectedness
+Step 1: Clone this repo and cd into Pipedown
 
 Step 2: It is highly recommended you install and use a [virtualenv](https://virtualenv.pypa.io/en/stable/).
 
@@ -40,18 +40,40 @@ virtualenv venv
 source venv/bin/activate
 ```
 
-Step 3: Install gRPC.
+Step 3: Install gRPC. (If you chose to install outside of a virtualenv, you may have some trouble at this step).
 
 `pip install grpcio`
 
-Step 4: Configuring the router.
+Step 4 (optional): Install iPerf on both routers. This is only required if you plan to use iPerf as for your
+connectivity test. By default, iPerf is in use, so it is recommended that it be installed.
+
+On a linux container, install iPerf how you normally would for your OS. Example:
+
+`apt-get install iperf`
+
+On a native IOS-XR box, use yum:
+
+`sudo yum install iperf`
+
+iPerf will need to be turned on on the data center router whom you are testing connectivity to.
+
+To turn on iPerf on your data center router, use this command:
+
+`iperf -s -B <port address to bind to> -u`
+
+
+Step 4: Run the `setup.py` script.
+
+`python setup.py install`
+
+Step 5: Configuring the router.
 
 Ensure these things are configured on the router:
 
 - Turn on gRPC.
 - Route-policy that will drop everything, (how the app flushes the internet connection).
 
-Step 5: Create a monitor.config file in the router-connectedness directory and fill in the values in the key:value pair.
+Step 6: Create a monitor.config file in the router-connectedness directory and fill in the values in the key:value pair.
 
 ```
 [Name-for-connection]
@@ -87,7 +109,7 @@ flush_as : 65000
 drop_policy_name: drop
 ```
 
-Step 6: Turn on iPerf on destination box.
+Step 7: Turn on iPerf on destination box.
 
 The iPerf server must be running on another router or server (the router to whom you are trying to connect your link) in order to test iPerf.
 
@@ -97,7 +119,7 @@ Use following command to launch iPerf:
 
 *Replace ip_address with the destination ip address.
 
-Step 7: Run deamon.
+Step 8: Run deamon.
 
 Run the monitor daemon. It uses multithreading so a instance will spawn for every link you want to monitor. You can check the log to ensure it is working.
 

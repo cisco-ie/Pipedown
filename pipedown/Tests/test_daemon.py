@@ -2,11 +2,6 @@ import unittest
 import os
 from shutil import copyfile, move
 import mock
-<<<<<<< HEAD
-=======
-import monitor_daemon
->>>>>>> master
-
 import monitor_daemon
 
 
