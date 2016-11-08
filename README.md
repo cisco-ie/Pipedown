@@ -39,7 +39,7 @@ virtualenv venv
 source venv/bin/activate
 ```
 
-Step 3: Install gRPC.
+Step 3: Install gRPC. (If you chose to install outside of a virtualenv, you may have some trouble at this step).
 
 `pip install grpcio`
 
