@@ -27,7 +27,7 @@ For an easy Pipedown-in-a-box demonstration, please refer to the [vagrant](https
 
 ## Usage
 
-Step 1: Clone this repo and cd into router-connectedness
+Step 1: Clone this repo and cd into Pipedown
 
 Step 2: It is highly recommended you install and use a [virtualenv](https://virtualenv.pypa.io/en/stable/).
 
