@@ -43,14 +43,18 @@ Step 3: Install gRPC.
 
 `pip install grpcio`
 
-Step 4: Configuring the router.
+Step 4: Run the `setup.py` script.
+
+`python setup.py install`
+
+Step 5: Configuring the router.
 
 Ensure these things are configured on the router:
 
 - Turn on gRPC.
 - Route-policy that will drop everything, (how the app flushes the internet connection).
 
-Step 5: Create a monitor.config file in the router-connectedness directory and fill in the values in the key:value pair.
+Step 6: Create a monitor.config file in the router-connectedness directory and fill in the values in the key:value pair.
 
 ```
 [Name-for-connection]
@@ -86,7 +90,7 @@ flush_as : 65000
 drop_policy_name: drop
 ```
 
-Step 6: Turn on iPerf on destination box.
+Step 7: Turn on iPerf on destination box.
 
 The iPerf server must be running on another router or server (the router to whom you are trying to connect your link) in order to test iPerf.
 
@@ -96,7 +100,7 @@ Use following command to launch iPerf:
 
 *Replace ip_address with the destination ip address.
 
-Step 7: Run deamon.
+Step 8: Run deamon.
 
 Run the monitor daemon. It uses multithreading so a instance will spawn for every link you want to monitor. You can check the log to ensure it is working.
 
