@@ -1,7 +1,7 @@
 import unittest
 import os
 from shutil import copyfile, move
-import mock
+from mock import patch
 import monitor_daemon
 
 
@@ -31,7 +31,8 @@ class DaemonTestCase(unittest.TestCase, object):
         sections = monitor_daemon.grab_sections()
         self.assertItemsEqual(sections, ['BGP', 'IS-IS'])
 
-    def test_grab_sections_no_section(self):
+    @patch('monitor_daemon.LOGGER')
+    def test_grab_sections_no_section(self, mock_logger):
         copyfile(
             os.path.join(self.location, 'Examples/Config/no_section.config'),
             os.path.join(self.location, '../monitor.config')
@@ -39,8 +40,10 @@ class DaemonTestCase(unittest.TestCase, object):
         with self.assertRaises(SystemExit) as cm:
             monitor_daemon.grab_sections()
         self.assertRaisesRegexp(cm.exception.code, 'File contains no section headers')
+        self.assertTrue(mock_logger.error.called)
 
-    def test_grab_sections_missing_object(self):
+    @patch('monitor_daemon.LOGGER')
+    def test_grab_sections_missing_object(self, mock_logger):
         open('router_connected.log', 'w').close()
         copyfile(
             os.path.join(self.location, 'Examples/Config/no_protocol.config'),
@@ -50,11 +53,8 @@ class DaemonTestCase(unittest.TestCase, object):
         health = None
         with self.assertRaises(SystemExit) as cm:
             monitor_daemon.monitor('BGP', lock, health)
-        with open('router_connected.log') as debug_log:
-            log = debug_log.readlines()[0]
-            self.assertRegexpMatches(log, 'Config file error:')
-        self.assertEqual(cm.exception.code, 1)  
-  
+        self.assertTrue(mock_logger.error.called)
+
     def tearDown(self):
         if os.path.isfile(os.path.join(self.location, '../monitortest.config')):
             move(

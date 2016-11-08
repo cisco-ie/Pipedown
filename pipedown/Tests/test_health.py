@@ -29,18 +29,20 @@ class HealthTestCase(unittest.TestCase, object):
             return f.read()
 
     @classmethod
-    @patch('Monitor.health.logging.getLogger')
-    def setUpClass(cls, mock_logging):
+    def setUpClass(cls):
         cls.grpc_client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'test', 'test')
         cls.ipv4_link = Link('10.1.1.1', '10.1.1.2', ['BGP', 'ISIS'])
         cls.ipv6_link = Link('10:1:1::1', '10:1:1::2', ['BGP', 'OSPF'])
 
+
     @patch('Monitor.health.subprocess.Popen.communicate')
-    def test_iperf_v4(self, mock_communicate):
+    @patch('Monitor.health.LOGGER')
+    def test_iperf_v4(self, mock_logger, mock_communicate):
         err = 'read failed: Connection refused\n'
         mock_communicate.return_value = ['', err]
         response = health.run_iperf(self.ipv4_link, 10, 20, 5, 5)
         self.assertTrue(response)
+        self.assertTrue(mock_logger.critical.called)
 
         out = self.read_file('Examples/iPerf/good.txt')
         mock_communicate.return_value = [out, '']
@@ -51,11 +53,13 @@ class HealthTestCase(unittest.TestCase, object):
         self.assertTrue(health.run_iperf(self.ipv4_link))
 
     @patch('Monitor.health.subprocess.Popen.communicate')
-    def test_iperf_v6(self, mock_communicate):
+    @patch('Monitor.health.LOGGER')
+    def test_iperf_v6(self, mock_logger, mock_communicate):
         err = 'read failed: Connection refused\n'
         mock_communicate.return_value = ['', err]
         response = health.run_iperf(self.ipv6_link)
         self.assertTrue(response)
+        self.assertTrue(mock_logger.critical.called)
 
         out = self.read_file('Examples/iPerf/good.txt')
         mock_communicate.return_value = [out, '']
@@ -107,7 +111,8 @@ class HealthTestCase(unittest.TestCase, object):
         self.assertIsNone(self.ipv4_link._check_protocol('isis'))
 
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
-    def test_check_rib_v4(self, mock_get):
+    @patch('Monitor.health.LOGGER')
+    def test_check_rib_v4(self, mock_logger, mock_get):
         output_good = self.read_file('Examples/RIB/protocol-active.txt')
         mock_get.return_value = '', output_good
         self.assertTrue(health.check_rib(self.ipv4_link, self.grpc_client))
@@ -127,17 +132,21 @@ class HealthTestCase(unittest.TestCase, object):
             err = Mock(message='error string')
             mock_get.return_value = err, output_bad
             health.check_rib(self.ipv4_link, self.grpc_client)
+            self.assertTrue(mock_logger.error.called)
 
             err = Mock(message=error_tag)
             mock_get.return_value = err, output_bad
             health.check_rib(self.ipv4_link, self.grpc_client)
+            self.assertTrue(mock_logger.error.called)
 
             err = Mock(message=error_msg)
             mock_get.return_value = err, output_bad
             health.check_rib(self.ipv4_link, self.grpc_client)
+            self.assertTrue(mock_logger.error.called)
 
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
-    def test_check_rib_v6(self, mock_get):
+    @patch('Monitor.health.LOGGER')
+    def test_check_rib_v6(self, mock_logger, mock_get):
         output_good = self.read_file('Examples/RIB/protocol-active.txt')
         mock_get.return_value = '', output_good
         self.assertTrue(health.check_rib(self.ipv6_link, self.grpc_client))
@@ -155,14 +164,17 @@ class HealthTestCase(unittest.TestCase, object):
             err = Mock(message='error string')
             mock_get.return_value = err, output_bad
             health.check_rib(self.ipv6_link, self.grpc_client)
+            self.assertTrue(mock_logger.error.called)
 
             err = Mock(message='{"cisco-grpc:errors": {"error": [{"error-type": "protocol","error-tag": "unknown-element","error-severity": "error","error-path": "Cisco-IOS-XR-ip-rib-ipv4-oper:ns1:rib/ns1:vrf"}]}}')
             mock_get.return_value = err, output_bad
             health.check_rib(self.ipv6_link, self.grpc_client)
+            self.assertTrue(mock_logger.error.called)
 
             err = Mock(message='{"cisco-grpc:errors": {"error": [{"error-type": "application","error-tag": "operation-failed","error-severity": "error","error-message": "The instance name is used already: asn 0.1 inst-name default"}]}}')
             mock_get.return_value = err, output_bad
             health.check_rib(self.ipv6_link, self.grpc_client)
+            self.assertTrue(mock_logger.error.called)
 
 if __name__ == '__main__':
     unittest.main()
