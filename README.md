@@ -43,6 +43,24 @@ Step 3: Install gRPC. (If you chose to install outside of a virtualenv, you may 
 
 `pip install grpcio`
 
+Step 4 (optional): Install iPerf on both routers. This is only required if you plan to use iPerf as for your
+connectivity test. By default, iPerf is in use, so it is recommended that it be installed.
+
+On a linux container, install iPerf how you normally would for your OS. Example:
+
+`apt-get install iperf`
+
+On a native IOS-XR box, use yum:
+
+`sudo yum install iperf`
+
+iPerf will need to be turned on on the data center router whom you are testing connectivity to.
+
+To turn on iPerf on your data center router, use this command:
+
+`iperf -s -B <port address to bind to> -u`
+
+
 Step 4: Run the `setup.py` script.
 
 `python setup.py install`
