@@ -124,12 +124,19 @@ def ping_test(link, timeout=10):
         Returns:
         bool: False if no errors, True if error.
     """
-    from scapy.all import sr1, IP, ICMP
-    resp = sr1(
-        IP(src=link.interface, dst=link.destination)/ICMP(),
-        timeout=timeout,
-        verbose=False
-    )
+    from scapy.all import sr1, IP, ICMP, IPv6
+    if link.version == 4:
+        resp = sr1(
+            IP(src=link.interface, dst=link.destination)/ICMP(),
+            timeout=timeout,
+            verbose=False
+        )
+    elif link.version == 6:
+        resp = sr1(
+            IPv6(src=link.interface, dst=link.destination)/ICMP(),
+            timeout=timeout,
+            verbose=False
+        )
     if resp:
         return False
     else:
