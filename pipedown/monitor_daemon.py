@@ -34,6 +34,7 @@ from Tools.exceptions import GRPCError, ProtocolError
 LOGGER = log.log()
 
 def monitor(section, lock, health_dict):
+    #Silence keyboard interrupt signal.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Read in Configuration for Daemon.
     location = os.path.dirname(os.path.realpath(__file__))
