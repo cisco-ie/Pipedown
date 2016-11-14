@@ -1,7 +1,7 @@
 # Pipedown
 ### Router Connectedness Application
 
-##### Pipedown 1.2.0
+##### Pipedown 1.2.1
 
 ##### Released November 3, 2016
 
