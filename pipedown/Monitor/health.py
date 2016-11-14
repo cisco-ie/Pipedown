@@ -115,6 +115,22 @@ def check_rib(link, grpc_client):
             )
         raise
 
+def ping_test(link, timeout=10):
+    """Uses scapy to send ICMP packets and listen for response.
+        Args:
+            link (Link): The link to be checked.
+            timeout (int): ICMP timeout time in seconds.
+
+        Returns:
+        bool: False if no errors, True if error.
+    """
+    from scapy.all import sr1, IP, ICMP
+    resp = sr1(IP(src=link.interface, dst=link.destination)/ICMP(), timeout=timeout)
+    if resp:
+        return False
+    else:
+        return True
+
 def health(link, grpc_client, bw_thres=400, jitter_thres=10, pkt_loss=2,
            interval=5):
     """Returns False if error on link, True if no errors.
