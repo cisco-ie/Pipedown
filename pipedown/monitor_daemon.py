@@ -18,6 +18,7 @@ deemed by the thresholds set,then the policy on the link to the Internet
 is changed to stop peering with external routers.
 """
 import multiprocessing
+import signal
 import os
 import sys
 import ConfigParser
@@ -33,6 +34,7 @@ from Tools.exceptions import GRPCError, ProtocolError
 LOGGER = log.log()
 
 def monitor(section, lock, health_dict):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Read in Configuration for Daemon.
     location = os.path.dirname(os.path.realpath(__file__))
     config = ConfigParser.ConfigParser()
@@ -146,8 +148,15 @@ def daemon():
     for section in sections:
         d = multiprocessing.Process(name=section, target=monitor, args=(section, lock, health_dict))
         jobs.append(d)
-        d.start()
-    d.join()
+        d.start()      
+    try:
+        for job in jobs:
+            job.join()
+    except KeyboardInterrupt:
+        print "Keyboard interrupt received."
+        for job in jobs:
+            job.terminate()
+            job.join()
 
 if __name__ == '__main__':
     daemon()
