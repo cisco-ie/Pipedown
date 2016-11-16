@@ -141,6 +141,9 @@ def problem_link(client, config, flushed, alerted, health_dict, lock, section):
         lock (multiprocessing.Lock): Lock to prevent other threads from using gRPC
         simultaneously.
         section (str): The config section.
+
+    Return:
+        actions (list): [flushed, alerted] Returns 
     """
     actions = [flushed, alerted]
     LOGGER.warning('Link %s is down.', section)
@@ -158,6 +161,7 @@ def problem_link(client, config, flushed, alerted, health_dict, lock, section):
                     config.bgp_as,
                     config.drop_policy_name
                     )
+                actions[0] = True
                 LOGGER.info(reply)
                 if 'Error' not in reply:
                     actions[0] = True
