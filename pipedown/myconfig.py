@@ -5,10 +5,14 @@ class MyConfig(object):
         parser = SafeConfigParser()
         found = parser.read(filename)
         if not found:
-            raise ValueError('No config file found.')
-        self.sections = parser.sections()
-        for name in self.sections:
-            temp = {}
-            new_dict = {}
-            new_dict[name] = temp.update(parser.items(name))
-            self.__dict__.update(new_dict)
+            raise ValueError('No config file found')
+        section_names = parser.sections()
+        print section_names
+        self.sections = []
+        for name in section_names:
+            self.sections.append(Section(name, parser))
+
+class Section(object):
+    def __init__(self, section, parser):
+        self.section = section
+        self.__dict__.update(parser.items(section))
