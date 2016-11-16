@@ -24,12 +24,11 @@ Works in python 2.7 and Python 3+.
 Author: Lisa Roach
 """
 
-from Tools.exceptions import ProtocolError
-
 import logging
 import sys
 from netaddr import IPAddress
 from netaddr.core import AddrFormatError
+from Tools.exceptions import ProtocolError
 
 LOGGER = logging.getLogger()
 
@@ -210,4 +209,3 @@ class Link(object):
                 raise ProtocolError(protocol)
         else:
             raise ProtocolError(protocol)
-
