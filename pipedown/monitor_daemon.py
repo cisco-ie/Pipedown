@@ -76,7 +76,8 @@ def monitor(section, lock, config, health_dict):
             if flushed is False:
                 lock.acquire()
                 health_dict[section] = True
-                flushed = problem_flush(client, config)
+                if all(health_dict.values()):
+                    flushed = problem_flush(client, config)
                 lock.release()
             else:
                 LOGGER.info('Link already flushed.')
@@ -177,16 +178,15 @@ def problem_flush(client, config):
     """
     flushed = False
     #If all the links are down.
-    if all(section.health for section in config.__dict__.values()):
-        reply = response.model_selection(
-            config.yang,
-            client,
-            config.bgp_as,
-            config.drop_policy_name
-            )
-        LOGGER.info(reply)
-        if 'Error' not in reply:
-            flushed = True
+    reply = response.model_selection(
+        config.yang,
+        client,
+        config.bgp_as,
+        config.drop_policy_name
+        )
+    LOGGER.info(reply)
+    if 'Error' not in reply:
+        flushed = True
     return flushed
 
 def daemon():
