@@ -115,7 +115,6 @@ def healthy_link(sec_config, lock):
     Return:
         False (bool):Sets Flushed back to False.
     """
-        #This is currently static, as we support more types will add to config file.
     lock.acquire()
     reply = response.model_selection(
         sec_config.yang,

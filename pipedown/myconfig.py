@@ -8,8 +8,11 @@ class MyConfig(object):
             raise ValueError('No config file found.')
         section_names = parser.sections()
         self.sections = {}
+        self.protocols = []
         for name in section_names:
             self.sections[name] = Section(name, parser)
+            #Convert the protocols to a list.
+            self.sections[name].protocols = self.sections[name].protocols.split(',')
 
 class Section(object):
     def __init__(self, section, parser):
