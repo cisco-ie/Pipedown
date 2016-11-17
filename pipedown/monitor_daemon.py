@@ -129,7 +129,7 @@ def healthy_link(sec_config):
     reply = response.model_selection(
         sec_config.yang,
         sec_config.client,
-        sec_config.bgp_as,
+        sec_config.flush_bgp_as,
         sec_config.pass_policy_name
         )
     LOGGER.info(reply)
@@ -181,7 +181,7 @@ def problem_flush(client, sec_config):
     reply = response.model_selection(
         sec_config.yang,
         client,
-        sec_config.bgp_as,
+        sec_config.flush_bgp_as,
         sec_config.drop_policy_name
         )
     LOGGER.info(reply)
