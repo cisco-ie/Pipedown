@@ -62,7 +62,7 @@ def monitor(section, lock, config, health_dict):
             if flushed:
                 LOGGER.warning('Link is back up, adding neighbor...')
                 lock.acquire()
-                flushed = healthy_link(sec_config)
+                flushed = healthy_link(client, sec_config)
                 lock.release()
                 #We want to alert that the link is back up.
                 alerted = False
@@ -115,7 +115,7 @@ def link_check(sec_config, client):
             'GRPC error when checking link health, health cannot be determined.'
         )
 
-def healthy_link(sec_config):
+def healthy_link(client, sec_config):
     """Response when the link is healthy.
     BGP relationship will be returned to it's original policy if it was flushed.
     No action will be taken if the BGP relationship was never flushed.
@@ -128,7 +128,7 @@ def healthy_link(sec_config):
     """
     reply = response.model_selection(
         sec_config.yang,
-        sec_config.client,
+        client,
         sec_config.flush_bgp_as,
         sec_config.pass_policy_name
         )
