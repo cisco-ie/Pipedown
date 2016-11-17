@@ -77,7 +77,7 @@ def monitor(section, lock, config, health_dict):
                 lock.acquire()
                 health_dict[section] = True
                 if all(health_dict.values()):
-                    flushed = problem_flush(client, config)
+                    flushed = problem_flush(client, sec_config)
                 lock.release()
             else:
                 LOGGER.info('Link already flushed.')
@@ -164,13 +164,13 @@ def problem_alert(sec_config, section):
         pass
     return alerted
 
-def problem_flush(client, config):
+def problem_flush(client, sec_config):
     """If there are problems on the link flush, alert with text and/or email,
        or both.
 
     Args:
         client (GRPCClient): The gRPC client object.
-        config (MyConfig): The config object for the current config section.
+        sec_config (Section): The config object for the current config section.
 
     Return:
          flushed (bool): Updates monitor's flushed to True if the neighborship
@@ -179,10 +179,10 @@ def problem_flush(client, config):
     flushed = False
     #If all the links are down.
     reply = response.model_selection(
-        config.yang,
+        sec_config.yang,
         client,
-        config.bgp_as,
-        config.drop_policy_name
+        sec_config.bgp_as,
+        sec_config.drop_policy_name
         )
     LOGGER.info(reply)
     if 'Error' not in reply:
