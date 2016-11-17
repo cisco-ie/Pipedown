@@ -34,10 +34,12 @@ from Tools.exceptions import GRPCError, ProtocolError
 LOGGER = log.log()
 
 def monitor(section, lock, config):
+    """TODO: Add docstring here.
+    """
     #Silence keyboard interrupt signal.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Access the section in config.
-    sec_config = config.sections[section]
+    sec_config = config.section
     alerted = False
     flushed = False
     #Set up a gRPC client.
@@ -65,7 +67,7 @@ def monitor(section, lock, config):
             LOGGER.warning('Link %s is down.', section)
             sec_config.health = True
             #If the link is not already flushed.
-            if not flushed:
+            if flushed is False:
                 flushed = problem_flush(client, config, lock)
             else:
                 LOGGER.info('Link already flushed.')
