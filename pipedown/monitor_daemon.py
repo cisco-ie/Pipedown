@@ -39,7 +39,7 @@ def monitor(section, lock, config):
     #Silence keyboard interrupt signal.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Access the section in config.
-    sec_config = config.section
+    sec_config = config.__dict__[section]
     alerted = False
     flushed = False
     #Set up a gRPC client.
