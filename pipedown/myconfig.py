@@ -12,7 +12,7 @@ class MyConfig(object):
         for name in section_names:
             self.sections[name] = Section(name, parser)
             #Convert the protocols to a list.
-            self.protocols.append(self.sections[name].protocols)
+            self.protocols.append([self.sections[name].protocols])
 
     def __repr__(self):
         return '{}(sections = {}, protocols = {})'.format(
