@@ -35,7 +35,7 @@ class Section(object):
             #These are optional parameters.
             pass
         try:
-            self.__dict__['protocols'] = list(self.__dict__['protocols'])
+            self.__dict__['protocols'] = [self.__dict__['protocols']]
         except AttributeError:
             #This is NOT an optional parameter.
             raise
