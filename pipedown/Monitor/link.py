@@ -107,11 +107,9 @@ class Link(object):
                     protocol = protocol.replace('-', '')
                 #If they are valid protocols, set them.
                 self.protocols.append(protocol.lower())
-        except ProtocolError as e:
-            LOGGER.critical(e.message)
+        except ProtocolError:
             raise
-        except TypeError as e:
-            LOGGER.critical(e)
+        except TypeError:
             raise
 
     def __repr__(self):

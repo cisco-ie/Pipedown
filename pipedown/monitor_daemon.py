@@ -84,8 +84,8 @@ def link_check(sec_config):
     LOGGER.info('Checking link health of %s', sec_config.source)
     try:
         link = Link(sec_config.destination, sec_config.source, sec_config.protocols)
-    except ProtocolError:
-        LOGGER.error('One of the protocols is invalid: %s', sec_config.protocols)
+    except ProtocolError as err:
+        LOGGER.critical(err.message)
         return False
     try:
         result = health(
