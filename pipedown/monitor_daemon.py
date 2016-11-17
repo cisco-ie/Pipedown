@@ -20,6 +20,7 @@ is changed to stop peering with external routers.
 import multiprocessing
 import signal
 import os
+import sys
 from grpc.framework.interfaces.face.face import AbortionError
 
 import log
@@ -32,61 +33,67 @@ from Tools.exceptions import GRPCError, ProtocolError
 
 LOGGER = log.log()
 
-def monitor(section, lock, health_dict, config):
+def monitor(section, lock, config):
     #Silence keyboard interrupt signal.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    #Read in Configuration for Daemon.
-    config = config.__dict__[section]
+    #Access the section in config.
+    sec_config = config.sections[section]
     alerted = False
     flushed = False
     #Set up a gRPC client.
     client = CiscoGRPCClient(
-        config.grpc_server,
-        config.grpc_port,
+        sec_config.grpc_server,
+        sec_config.grpc_port,
         10,
-        config.grpc_user,
-        config.grpc_pass
+        sec_config.grpc_user,
+        sec_config.grpc_pass
         )
     while True:
         #Checking link to data center.
-        result = link_check(config)
-        if result:
-            if result is False:
-                flushed = healthy_link(config, flushed, lock)
+        result = link_check(sec_config)
+        #If there are no problems.
+        if result is False:
+            if flushed:
+                LOGGER.warning('Link is back up, adding neighbor...')
+                flushed = healthy_link(sec_config, lock)
+                #We want to alert that the link is back up.
+                alerted = False
             else:
-                #Flushing connection to Internet due to Data center link being faulty.
-                flushed, alerted = problem_link(
-                    client,
-                    config,
-                    flushed,
-                    alerted,
-                    health_dict,
-                    lock,
-                    section
-                    )
+                LOGGER.info('Link is good.')
+        #If there is a problem on the link.
+        else:
+            LOGGER.warning('Link %s is down.', section)
+            sec_config.health = True
+            #If the link is not already flushed.
+            if not flushed:
+                flushed = problem_flush(client, config, lock)
+            else:
+                LOGGER.info('Link already flushed.')
+            if not alerted:
+                alerted = problem_alert(config, section)
 
-def link_check(config):
+def link_check(sec_config):
     """Checks the health of the link.
 
     Args:
-        config (MyConfig): The config object for the current config section.
+        sec_config (Section): The section object for the current config section.
 
     Return:
         result (bool): False if the health is good, True if there is a problem.
     """
-    LOGGER.info('Checking link health of %s', config.source)
+    LOGGER.info('Checking link health of %s', sec_config.source)
     try:
-        link = Link(config.destination, config.source, config.protocols)
+        link = Link(sec_config.destination, sec_config.source, sec_config.protocols)
     except ProtocolError:
-        LOGGER.error('One of the protocols is invalid: %s', config.protocols)
+        LOGGER.error('One of the protocols is invalid: %s', sec_config.protocols)
     try:
         result = health(
             link,
-            config.client,
-            config.bw_thres,
-            config.jitter_thres,
-            config.pkt_loss,
-            config.interval
+            sec_config.client,
+            sec_config.bw_thres,
+            sec_config.jitter_thres,
+            sec_config.pkt_loss,
+            sec_config.interval
             )
         return result
     except (GRPCError, AbortionError):
@@ -94,119 +101,99 @@ def link_check(config):
             'GRPC error when checking link health, health cannot be determined.'
         )
 
-def healthy_link(config, flushed, lock):
+def healthy_link(sec_config, lock):
     """Response when the link is healthy.
     BGP relationship will be returned to it's original policy if it was flushed.
     No action will be taken if the BGP relationship was never flushed.
 
     Args:
-        config (MyConfig): The config object for the current config section.
-        flushed (bool): True if the BGP relationship was already flushed.
+        sec_config (Section): The Section object for the current config section.
         lock (multiprocessing.Lock): Lock to prevent other threads from using gRPC
                                      simultaneously.
 
     Return:
         False (bool):Sets Flushed back to False.
     """
-    LOGGER.info('Link is good.')
-    if flushed:
-        LOGGER.warning('Link is back up, adding neighbor...')
         #This is currently static, as we support more types will add to config file.
-        lock.acquire()
-        try:
-            reply = response.model_selection(
-                config.yang,
-                config.client,
-                config.bgp_as,
-                config.pass_policy_name
-                )
-            LOGGER.info(reply)
-        except AttributeError:
-            reply = 'Link is back up, but no action has been taken.'
-            LOGGER.info(reply)
-        lock.release()
-    #Set flushed to False.
+    lock.acquire()
+    reply = response.model_selection(
+        sec_config.yang,
+        sec_config.client,
+        sec_config.bgp_as,
+        sec_config.pass_policy_name
+        )
+    lock.release()
+    LOGGER.info(reply)
+    #Set flushed back to False
     return False
 
-def problem_link(client, config, flushed, alerted, health_dict, lock, section):
-    """If there are problems on the link flush, alert with text and/or email, or both.
+def problem_alert(sec_config, section):
+    """Alert because there are problems on the link.
+
+    """
+    alerted = False
+    try:
+        response.text_alert(sec_config.text_alert, section)
+        #Prevent spamming the alert.
+        alerted = True
+    except AttributeError:
+        #There is no text_alert option
+        pass
+    try:
+        response.email_alert(sec_config.email_alert, section)
+        #Prevent spamming the alert.
+        alerted = True
+    except AttributeError:
+        #There is no email alert option.
+        pass
+    return alerted
+
+def problem_flush(client, config, lock):
+    """If there are problems on the link flush, alert with text and/or email,
+       or both.
 
     Args:
         client (GRPCClient): The gRPC client object.
         config (MyConfig): The config object for the current config section.
-        flushed (bool): True if the BGP relationship was already flushed.
-        alerted (bool): True if the client has been alerted already.
-        health_dict (dict): Dictionary holding health of all links. Only if all
-                            links are down will BGP relationship get flushed.
-        lock (multiprocessing.Lock): Lock to prevent other threads from using gRPC
-        simultaneously.
-        section (str): The config section.
+        lock (multiprocessing.Lock): Lock to prevent other threads from using
+                                     gRPC simultaneously.
 
     Return:
-        actions (list): [flushed, alerted] Returns 
+         flushed (bool): Updates monitor's flushed to True if the neighborship
+                        is flushed.
     """
-    actions = [flushed, alerted]
-    LOGGER.warning('Link %s is down.', section)
-    #This is currently static, as we support more types will add to config file.
-    lock.acquire()
-    health_dict[section] = True
+    flushed = False
     #If all the links are down.
-    if all(health_dict.values()):
+    if all(section.health for section in config.sections.values()):
         #If the link is not already flushed.
-        if not flushed:
-            try:
-                reply = response.model_selection(
-                    config.yang,
-                    client,
-                    config.bgp_as,
-                    config.drop_policy_name
-                    )
-                actions[0] = True
-                LOGGER.info(reply)
-                if 'Error' not in reply:
-                    actions[0] = True
-            except AttributeError:
-                actions[0] = False
-        elif flushed:
-            LOGGER.info('Link already flushed.')
-    else:
-        reply = section
-    if alerted:
-        try:
-            response.text_alert(config.text_alert, reply)
-            #Prevent spamming the alert.
-            actions[1] = True
-        except AttributeError:
-            #There is no text_alert option
-            pass
-        try:
-            response.email_alert(config.email_alert, reply)
-            #Prevent spamming the alert.
-            actions[1] = True
-        except AttributeError:
-            #There is no email alert option.
-            pass
-    lock.release()
-    return actions
+        lock.acquire()
+        reply = response.model_selection(
+            config.yang,
+            client,
+            config.bgp_as,
+            config.drop_policy_name
+            )
+        lock.release()
+        LOGGER.info(reply)
+        if 'Error' not in reply:
+            flushed = True
+    return flushed
 
 def daemon():
     #Spawn process per a section header.
     location = os.path.dirname(os.path.realpath(__file__))
-    config = MyConfig(os.path.join(location, 'monitor.config'))
+    try:
+        config = MyConfig(os.path.join(location, 'monitor.config'))
+    except ValueError, e:
+        print e
+        sys.exit(1)
     jobs = []
-    #Creating a multiprocessing dictionary
-    manager = multiprocessing.Manager()
-    health_dict = manager.dict()
-    #Can I move this into the below loop? <------------------------###
-    for section in config.sections:
-        health_dict[section] = False
     #Create lock object to ensure gRPC is only used once
     lock = multiprocessing.Lock()
     for section in config.sections:
         d = multiprocessing.Process(name=section, target=monitor, args=(
             section,
             lock,
-            health_dict,
             config
             )
         )
