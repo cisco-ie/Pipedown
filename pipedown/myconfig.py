@@ -18,24 +18,24 @@ class MyConfig(object):
         if not found:
             raise ValueError('No config file found.')
         section_names = parser.sections()
-        self.sections = {}
+        sections = {}
         for name in section_names:
             temp_sec = Section(name, parser)
             #Dashes cause errors down the road.
             if '-' in name:
                 name = name.replace('-', '')
-            self.sections[name] = temp_sec
-        self.__dict__.update(self.sections)
+            sections[name] = temp_sec
+        self.__dict__.update(sections)
 
     def __repr__(self):
         return '{}(sections = {})'.format(
             self.__class__.__name__,
-            self.sections
+            self.__dict__
         )
 
     def __str__(self):
         return 'Pipedown Configuration: Sections = {}'.format(
-            self.sections
+            self.__dict__
             )
 
 class Section(object):
@@ -45,13 +45,13 @@ class Section(object):
     Needs a parser object already created and passed into Section.
     """
     def __init__(self, section, parser):
-        self.health = False
         self.__dict__.update(parser.items(section))
         try:
             self.__int__('interval',
                          'jitter_thres',
                          'pkt_loss',
-                         'bw_thres')
+                         'bw_thres',
+                         'grpc_port')
         except AttributeError:
             #These are optional parameters.
             pass

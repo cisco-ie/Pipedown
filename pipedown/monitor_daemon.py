@@ -33,8 +33,12 @@ from Tools.exceptions import GRPCError, ProtocolError
 
 LOGGER = log.log()
 
-def monitor(section, lock, config):
+def monitor(section, lock, config, health_dict):
     """TODO: Add docstring here.
+        Args:
+            lock (multiprocessing.Lock): Lock to prevent other threads from using gRPC
+                                        simultaneously.
+            config (MyConfig): The config object for the current config section.
     """
     #Silence keyboard interrupt signal.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -57,7 +61,9 @@ def monitor(section, lock, config):
         if result is False:
             if flushed:
                 LOGGER.warning('Link is back up, adding neighbor...')
-                flushed = healthy_link(sec_config, lock)
+                lock.acquire()
+                flushed = healthy_link(sec_config)
+                lock.release()
                 #We want to alert that the link is back up.
                 alerted = False
             else:
@@ -68,7 +74,10 @@ def monitor(section, lock, config):
             sec_config.health = True
             #If the link is not already flushed.
             if flushed is False:
-                flushed = problem_flush(client, config, lock)
+                lock.acquire()
+                health_dict[section] = True
+                flushed = problem_flush(client, config)
+                lock.release()
             else:
                 LOGGER.info('Link already flushed.')
             if not alerted:
@@ -105,27 +114,23 @@ def link_check(sec_config, client):
             'GRPC error when checking link health, health cannot be determined.'
         )
 
-def healthy_link(sec_config, lock):
+def healthy_link(sec_config):
     """Response when the link is healthy.
     BGP relationship will be returned to it's original policy if it was flushed.
     No action will be taken if the BGP relationship was never flushed.
 
     Args:
         sec_config (Section): The Section object for the current config section.
-        lock (multiprocessing.Lock): Lock to prevent other threads from using gRPC
-                                     simultaneously.
 
     Return:
         False (bool):Sets Flushed back to False.
     """
-    lock.acquire()
     reply = response.model_selection(
         sec_config.yang,
         sec_config.client,
         sec_config.bgp_as,
         sec_config.pass_policy_name
         )
-    lock.release()
     LOGGER.info(reply)
     #Set flushed back to False
     return False
@@ -158,15 +163,13 @@ def problem_alert(sec_config, section):
         pass
     return alerted
 
-def problem_flush(client, config, lock):
+def problem_flush(client, config):
     """If there are problems on the link flush, alert with text and/or email,
        or both.
 
     Args:
         client (GRPCClient): The gRPC client object.
         config (MyConfig): The config object for the current config section.
-        lock (multiprocessing.Lock): Lock to prevent other threads from using
-                                     gRPC simultaneously.
 
     Return:
          flushed (bool): Updates monitor's flushed to True if the neighborship
@@ -174,16 +177,13 @@ def problem_flush(client, config, lock):
     """
     flushed = False
     #If all the links are down.
-    if all(section.health for section in config.sections.values()):
-        #If the link is not already flushed.
-        lock.acquire()
+    if all(section.health for section in config.__dict__.values()):
         reply = response.model_selection(
             config.yang,
             client,
             config.bgp_as,
             config.drop_policy_name
             )
-        lock.release()
         LOGGER.info(reply)
         if 'Error' not in reply:
             flushed = True
@@ -197,14 +197,20 @@ def daemon():
     except ValueError, msg:
         print msg
         sys.exit(1)
+    manager = multiprocessing.Manager()
+    health_dict = manager.dict()
+    #Can I move this into the below loop? <------------------------###
+    for section in config.__dict__.keys():
+        health_dict[section] = False
     jobs = []
     #Create lock object to ensure gRPC is only used once
     lock = multiprocessing.Lock()
-    for section in config.sections:
+    for section in config.__dict__.keys():
         d = multiprocessing.Process(name=section, target=monitor, args=(
             section,
             lock,
-            config
+            config,
+            health_dict
             )
         )
         jobs.append(d)
