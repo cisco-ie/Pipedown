@@ -43,7 +43,7 @@ def monitor(section, lock, config):
     #Set up a gRPC client.
     client = CiscoGRPCClient(
         sec_config.grpc_server,
-        sec_config.grpc_port,
+        int(sec_config.grpc_port),
         10,
         sec_config.grpc_user,
         sec_config.grpc_pass
