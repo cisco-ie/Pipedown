@@ -20,7 +20,11 @@ class MyConfig(object):
         section_names = parser.sections()
         self.sections = {}
         for name in section_names:
-            self.sections[name] = Section(name, parser)
+            temp_sec = Section(name, parser)
+            #Dashes cause errors down the road.
+            if '-' in name:
+                name = name.replace('-', '')
+            self.sections[name] = temp_sec
         self.__dict__.update(self.sections)
 
     def __repr__(self):
