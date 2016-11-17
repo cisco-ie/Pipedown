@@ -130,6 +130,13 @@ def healthy_link(sec_config, lock):
 def problem_alert(sec_config, section):
     """Alert because there are problems on the link.
 
+        Args:
+            sec_config (Section): The Section object for the current config 
+                                  section.
+            section (str): String name of section.
+
+        Return:
+            alerted (bool): Sets alerted to True if an alert was sent.
     """
     alerted = False
     try:
@@ -184,8 +191,8 @@ def daemon():
     location = os.path.dirname(os.path.realpath(__file__))
     try:
         config = MyConfig(os.path.join(location, 'monitor.config'))
-    except ValueError, e:
-        print e
+    except ValueError, msg:
+        print msg
         sys.exit(1)
     jobs = []
     #Create lock object to ensure gRPC is only used once
