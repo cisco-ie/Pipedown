@@ -50,7 +50,7 @@ def monitor(section, lock, config):
         )
     while True:
         #Checking link to data center.
-        result = link_check(sec_config)
+        result = link_check(sec_config, client)
         #If there are no problems.
         if result is False:
             if flushed:
@@ -72,11 +72,12 @@ def monitor(section, lock, config):
             if not alerted:
                 alerted = problem_alert(config, section)
 
-def link_check(sec_config):
+def link_check(sec_config, client):
     """Checks the health of the link.
 
     Args:
         sec_config (Section): The section object for the current config section.
+        client (GRPCClient): The gRPC client object.
 
     Return:
         result (bool): False if the health is good, True if there is a problem.
@@ -90,7 +91,7 @@ def link_check(sec_config):
     try:
         result = health(
             link,
-            sec_config.client,
+            client,
             sec_config.bw_thres,
             sec_config.jitter_thres,
             sec_config.pkt_loss,
