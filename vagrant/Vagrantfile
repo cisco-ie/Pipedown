@@ -26,6 +26,7 @@ Vagrant.configure(2) do |config|
     # Bridge between rtr1 and rtr2
     config.vm.define "bridge" do |node|
       node.vm.box =  "ubuntu/trusty64"
+      node.vm.hostname = "bridge"
 
       # eth1 and eth2 connected to rtr1  and  eth3 and eth4  connected to rtr2
       node.vm.network :private_network, virtualbox__intnet: "link1", auto_config: false
