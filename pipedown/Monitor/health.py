@@ -73,7 +73,7 @@ def run_iperf(link, bw_thres=400, jitter_thres=10, pkt_loss_thres=2,
     # True is bad, there are problems on the link.
     return verdict
 
-def check_rib(link, grpc_client):
+def check_cisco_rib(link, grpc_client):
     """Returns False (no error) if there is a route in the RIB, True if not.
 
     Checks if there is a route to the neighbor from the link.interface
@@ -114,6 +114,8 @@ def check_rib(link, grpc_client):
             'Unable to connect to local box, check your gRPC destination.'
             )
         raise
+
+# TODO: Add openconfig RIB check.
 
 def ping_test(link, timeout=10):
     """Uses scapy to send ICMP packets and listen for response.
@@ -161,7 +163,12 @@ def health(link, grpc_client, bw_thres=400, jitter_thres=10, pkt_loss=2,
 
     """
     try:
-        routing = check_rib(link, grpc_client)
+        #If we are using cisco model
+        routing = check_cisco_rib(link, grpc_client)
+        #If we are using OpenConfig, the Network Instance model is not yet available
+        #on box. If the link is IPv6 we can check the neighbor-reachability in the 
+        #open-config-interfaces model. If it is IPv4 we can only check the link health
+        #if it is a BGP link.
     except (GRPCError, AbortionError):
         raise
     if not routing: #If there is NOT an error in routing.
