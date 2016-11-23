@@ -75,7 +75,7 @@ def monitor(section, lock, config, health_dict):
             if health_dict['flushed'] is False:
                 lock.acquire()
                 health_dict[section] = True
-                if all(health_dict.values()):
+                if all(values[1] for values in health_dict.items() if values[0] != 'flushed'):
                     health_dict['flushed'] = problem_flush(client, sec_config)
                 lock.release()
             else:
