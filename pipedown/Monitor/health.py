@@ -115,7 +115,50 @@ def check_cisco_rib(link, grpc_client):
             )
         raise
 
-# TODO: Add openconfig RIB check.
+#TODO 
+def check_openconfig_rib(link, grpc_client):
+    """Returns False (no error) if there is a route in the RIB, True if not.
+
+    Checks if there is a route to the neighbor from the link.interface
+    of the protocol given (typically ISIS and/or BGP).
+
+    If there are multiple protocols on the link as long as one protocol is
+    healthy we assume the link is good and do not flush.
+
+    Uses gRPC to read the routing table, checking specifically that the
+    interface has a route (and of the type specified).
+
+    Args:
+        link (Link): The link to be checked.
+        grpc_client (CiscoGRPCClient): The grpc_client object. If using Juniper 
+                                        devices this should be a netconf client.
+
+    Returns:
+        bool: False if no errors, True if errors in RIB.
+
+    """
+    #https://github.com/openconfig/public/blob/master/release/models/network-instance/openconfig-network-instance.yang
+    path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+    ipv6 = ''
+    if link.version == 6:
+        ipv6 = 'ipv6-'
+    path = path.format(v=link.version, ipv6=ipv6, link=link.destination)
+    try:
+        err, output = grpc_client.getoper(path)
+        if err:
+            raise GRPCError(err)
+        #If one protocol on the link is functioning, we assume the link is up.
+        #On GRPCError, protocols not found, or not active, return True.
+        return any(protocol not in output or '"active": true' not in output
+                   for protocol in link.protocols)
+    except GRPCError as e:
+        LOGGER.error(e.message)
+        raise
+    except AbortionError:
+        LOGGER.critical(
+            'Unable to connect to local box, check your gRPC destination.'
+            )
+        raise
 
 def ping_test(link, timeout=10):
     """Uses scapy to send ICMP packets and listen for response.
@@ -176,3 +219,24 @@ def health(link, grpc_client, bw_thres=400, jitter_thres=10, pkt_loss=2,
         return iperf
     else:
         return routing
+
+def model_selection(model, link, client):
+    """Based on the model-type selected in the configuration file, call the
+       correct function.
+        As support for more models are added they will get added to the
+        dictionary for selection.
+
+        Args:
+            grpc_client (CiscoGRPCClient): the initiated GRPC client.
+            model (str): The yang model in use.
+            link (Link): The link to be checked.
+
+        Return:
+            bool: True if there is a problem, False if not.
+    """
+    functions = {
+        'cisco': check_cisco_rib,
+        'openconfig': check_openconfig_rib,
+    }
+    #Call the correct function and return its return value.
+    return functions[model](link, client)
