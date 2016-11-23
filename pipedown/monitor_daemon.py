@@ -21,6 +21,7 @@ import multiprocessing
 import signal
 import os
 import sys
+from tabulate import tabulate
 from grpc.framework.interfaces.face.face import AbortionError
 
 import log
@@ -125,15 +126,22 @@ def healthy_link(client, sec_config):
     Return:
         False (bool):Sets Flushed back to False.
     """
-    reply = response.model_selection(
-        sec_config.yang,
-        client,
-        sec_config.flush_bgp_as,
-        sec_config.pass_policy_name
-        )
-    LOGGER.info(reply)
-    #Set flushed back to False
-    return False
+    try:
+        reply = response.model_selection(
+            sec_config.yang,
+            client,
+            sec_config.flush_bgp_as,
+            sec_config.pass_policy_name
+            )
+        LOGGER.info(tabulate(
+            reply, 
+            headers=["\nNeighbor", "Link Type", "Old Policy", "New Policy"]
+            ))
+        #Set flushed back to False
+        return False
+    except (GRPCError, AbortionError):
+        LOGGER.info('No neighbors updated due to GRPC Merge Error.')
+        return True
 
 def problem_alert(sec_config, section):
     """Alert because there are problems on the link.
@@ -175,18 +183,22 @@ def problem_flush(client, sec_config):
          flushed (bool): Updates monitor's flushed to True if the neighborship
                         is flushed.
     """
-    flushed = False
-    #If all the links are down.
-    reply = response.model_selection(
-        sec_config.yang,
-        client,
-        sec_config.flush_bgp_as,
-        sec_config.drop_policy_name
-        )
-    LOGGER.info(reply)
-    if 'Error' not in reply:
-        flushed = True
-    return flushed
+    try:
+        #If all the links are down.
+        reply = response.model_selection(
+            sec_config.yang,
+            client,
+            sec_config.flush_bgp_as,
+            sec_config.drop_policy_name
+            )
+        LOGGER.info(tabulate(
+            reply, 
+            headers=["\nNeighbor", "Link Type", "Old Policy", "New Policy"]
+            ))
+        return True
+    except (GRPCError, AbortionError):
+        LOGGER.info('No neighbors updated due to GRPC Merge Error.')
+        return False
 
 def daemon():
     #Spawn process per a section header.
