@@ -113,19 +113,17 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
                 updated_neighbors.append(
                     (
                         neighbor['neighbor-address'],
-                        ipv['afi-safi-name'],
-                        curr_policy
+                        ipv['af-name'],
+                        curr_policy,
+                        new_policy_name
+                        )
                     )
-                )
     try:
         apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
         return 'No neighbors updated due to GRPC Merge Error.'
     updated_neighbors = json.dumps(updated_neighbors)
-    return 'Updated neighbors and policy: %s --> %s' % (
-        updated_neighbors,
-        new_policy_name
-    )
+    return updated_neighbors
 
 
 def get_bgp_config(grpc_client, bgp_config_template):
