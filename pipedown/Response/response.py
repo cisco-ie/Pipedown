@@ -95,7 +95,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
     try:
         bgp_config = get_bgp_config(grpc_client, bgp_config_template)
     except (GRPCError, AbortionError):
-        raise GRPCError
+        raise
     # Drill down to the neighbors to be flushed.
     bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
     updated_neighbors = []
