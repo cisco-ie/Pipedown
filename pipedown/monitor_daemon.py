@@ -58,28 +58,28 @@ def monitor(section, lock, config, health_dict):
         result = link_check(sec_config, client)
         #If there are no problems.
         if result is False:
+            lock.acquire()
+            health_dict[section] = False
             if health_dict['flushed'] is True:
                 LOGGER.warning('Link is back up, adding neighbor...')
-                lock.acquire()
                 health_dict['flushed'] = healthy_link(client, sec_config)
-                lock.release()
                 #We want to alert that the link is back up.
                 alerted = False
             else:
                 LOGGER.info('Link is good.')
+            lock.release()
         #If there is a problem on the link.
         else:
             LOGGER.warning('Link %s is down.', section)
-            sec_config.health = True
             #If the link is not already flushed.
+            lock.acquire()
+            health_dict[section] = True
             if health_dict['flushed'] is False:
-                lock.acquire()
-                health_dict[section] = True
                 if all(values[1] for values in health_dict.items() if values[0] != 'flushed'):
                     health_dict['flushed'] = problem_flush(client, sec_config)
-                lock.release()
             else:
                 LOGGER.info('Link already flushed.')
+            lock.release()
             if not alerted:
                 alerted = problem_alert(config, section)
 
