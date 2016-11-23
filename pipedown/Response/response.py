@@ -75,7 +75,7 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
     try:
         apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Merge Error.'
+        raise
     return updated_neighbors
 
 def open_config_update(grpc_client, neighbor_as, new_policy_name):
@@ -120,7 +120,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
     try:
         apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Merge Error.'
+        raise
     return updated_neighbors
 
 
