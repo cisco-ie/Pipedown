@@ -137,7 +137,7 @@ def healthy_link(client, sec_config):
                     tabulate(
                         reply,
                         headers=[
-                            "\nNeighbor",
+                            "Neighbor",
                             "Link Type",
                             "Old Policy",
                             "New Policy"
@@ -203,7 +203,7 @@ def problem_flush(client, sec_config):
                     tabulate(
                         reply,
                         headers=[
-                            "\nNeighbor",
+                            "Neighbor",
                             "Link Type",
                             "Old Policy",
                             "New Policy"
