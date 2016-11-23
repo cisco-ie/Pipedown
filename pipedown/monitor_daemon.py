@@ -195,10 +195,10 @@ def problem_flush(client, sec_config):
             reply, 
             headers=["\nNeighbor", "Link Type", "Old Policy", "New Policy"]
             ))
-        return False
+        return True
     except (GRPCError, AbortionError):
         LOGGER.info('No neighbors updated due to GRPC Merge Error.')
-        return True
+        return False
 
 def daemon():
     #Spawn process per a section header.
