@@ -21,6 +21,7 @@ import multiprocessing
 import signal
 import os
 import sys
+from tabulate import tabulate
 from grpc.framework.interfaces.face.face import AbortionError
 
 import log
@@ -183,7 +184,10 @@ def problem_flush(client, sec_config):
         sec_config.flush_bgp_as,
         sec_config.drop_policy_name
         )
-    LOGGER.info(reply)
+    LOGGER.info(tabulate(
+        reply, 
+        headers=["\nNeighbor", "Link Type", "Old Policy", "New Policy"]
+        ))
     if 'Error' not in reply:
         flushed = True
     return flushed

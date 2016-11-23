@@ -68,7 +68,8 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
                     (
                         neighbor['neighbor-address'],
                         ipv['af-name'],
-                        curr_policy
+                        curr_policy,
+                        new_policy_name
                         )
                     )
     try:
@@ -76,10 +77,7 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
     except (GRPCError, AbortionError):
         return 'No neighbors updated due to GRPC Merge Error.'
     updated_neighbors = json.dumps(updated_neighbors)
-    return 'Updated neighbors and policy: %s. New policy: %s' % (
-        updated_neighbors,
-        new_policy_name
-        )
+    return updated_neighbors
 
 def open_config_update(grpc_client, neighbor_as, new_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
