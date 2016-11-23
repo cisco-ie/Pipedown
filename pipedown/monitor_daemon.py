@@ -133,10 +133,17 @@ def healthy_link(client, sec_config):
             sec_config.flush_bgp_as,
             sec_config.pass_policy_name
             )
-        LOGGER.info(tabulate(
-            reply, 
-            headers=["\nNeighbor", "Link Type", "Old Policy", "New Policy"]
-            ))
+        LOGGER.info('\n%s',
+                    tabulate(
+                        reply,
+                        headers=[
+                            "\nNeighbor",
+                            "Link Type",
+                            "Old Policy",
+                            "New Policy"
+                        ]
+                    )
+                   )
         #Set flushed back to False
         return False
     except (GRPCError, AbortionError):
@@ -191,10 +198,17 @@ def problem_flush(client, sec_config):
             sec_config.flush_bgp_as,
             sec_config.drop_policy_name
             )
-        LOGGER.info(tabulate(
-            reply, 
-            headers=["\nNeighbor", "Link Type", "Old Policy", "New Policy"]
-            ))
+        LOGGER.info('\n%s',
+                    tabulate(
+                        reply,
+                        headers=[
+                            "\nNeighbor",
+                            "Link Type",
+                            "Old Policy",
+                            "New Policy"
+                        ]
+                    )
+                   )
         return True
     except (GRPCError, AbortionError):
         LOGGER.info('No neighbors updated due to GRPC Merge Error.')
