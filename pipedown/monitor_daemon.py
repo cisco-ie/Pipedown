@@ -184,7 +184,6 @@ def problem_flush(client, sec_config):
                         is flushed.
     """
     try:
-        flushed = False
         #If all the links are down.
         reply = response.model_selection(
             sec_config.yang,
@@ -196,7 +195,7 @@ def problem_flush(client, sec_config):
             reply, 
             headers=["\nNeighbor", "Link Type", "Old Policy", "New Policy"]
             ))
-        return flushed
+        return False
     except (GRPCError, AbortionError):
         LOGGER.info('No neighbors updated due to GRPC Merge Error.')
         return True
