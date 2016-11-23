@@ -141,7 +141,8 @@ def healthy_link(client, sec_config):
                             "Link Type",
                             "Old Policy",
                             "New Policy"
-                        ]
+                        ],
+                        tablefmt="rst"
                     )
                    )
         #Set flushed back to False
@@ -206,7 +207,8 @@ def problem_flush(client, sec_config):
                             "Link Type",
                             "Old Policy",
                             "New Policy"
-                        ]
+                        ],
+                        tablefmt="rst"
                     )
                    )
         return True
