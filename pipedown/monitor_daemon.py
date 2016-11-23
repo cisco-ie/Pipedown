@@ -45,7 +45,6 @@ def monitor(section, lock, config, health_dict):
     #Access the section in config.
     sec_config = config.__dict__[section]
     alerted = False
-    flushed = False
     #Set up a gRPC client.
     client = CiscoGRPCClient(
         sec_config.grpc_server,
@@ -59,10 +58,10 @@ def monitor(section, lock, config, health_dict):
         result = link_check(sec_config, client)
         #If there are no problems.
         if result is False:
-            if flushed:
+            if health_dict['flushed'] is True:
                 LOGGER.warning('Link is back up, adding neighbor...')
                 lock.acquire()
-                flushed = healthy_link(client, sec_config)
+                health_dict['flushed'] = healthy_link(client, sec_config)
                 lock.release()
                 #We want to alert that the link is back up.
                 alerted = False
@@ -73,11 +72,11 @@ def monitor(section, lock, config, health_dict):
             LOGGER.warning('Link %s is down.', section)
             sec_config.health = True
             #If the link is not already flushed.
-            if flushed is False:
+            if health_dict['flushed'] is False:
                 lock.acquire()
                 health_dict[section] = True
                 if all(health_dict.values()):
-                    flushed = problem_flush(client, sec_config)
+                    health_dict['flushed'] = problem_flush(client, sec_config)
                 lock.release()
             else:
                 LOGGER.info('Link already flushed.')
@@ -202,6 +201,7 @@ def daemon():
     #Can I move this into the below loop? <------------------------###
     for section in config.__dict__.keys():
         health_dict[section] = False
+    health_dict['flushed'] = False
     jobs = []
     #Create lock object to ensure gRPC is only used once
     lock = multiprocessing.Lock()
