@@ -113,7 +113,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
                 updated_neighbors.append(
                     (
                         neighbor['neighbor-address'],
-                        ipv['af-name'],
+                        ipv['af-safi-name'],
                         curr_policy,
                         new_policy_name
                         )
