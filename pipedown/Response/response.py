@@ -47,7 +47,7 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
     try:
         bgp_config = get_bgp_config(grpc_client, bgp_config_template)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Get Error.'
+        raise
     # Drill down to the neighbors to be flushed or added.
     bgp_config = json.loads(bgp_config)
     neighbors = bgp_config['Cisco-IOS-XR-ipv4-bgp-cfg:bgp']['instance'][0]
@@ -68,18 +68,15 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
                     (
                         neighbor['neighbor-address'],
                         ipv['af-name'],
-                        curr_policy
+                        curr_policy,
+                        new_policy_name
                         )
                     )
     try:
         apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Merge Error.'
-    updated_neighbors = json.dumps(updated_neighbors)
-    return 'Updated neighbors and policy: %s. New policy: %s' % (
-        updated_neighbors,
-        new_policy_name
-        )
+        raise
+    return updated_neighbors
 
 def open_config_update(grpc_client, neighbor_as, new_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
@@ -98,7 +95,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
     try:
         bgp_config = get_bgp_config(grpc_client, bgp_config_template)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Get Error.'
+        raise
     # Drill down to the neighbors to be flushed.
     bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
     updated_neighbors = []
@@ -116,18 +113,15 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
                     (
                         neighbor['neighbor-address'],
                         ipv['afi-safi-name'],
-                        curr_policy
+                        curr_policy,
+                        new_policy_name
+                        )
                     )
-                )
     try:
         apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Merge Error.'
-    updated_neighbors = json.dumps(updated_neighbors)
-    return 'Updated neighbors and policy: %s --> %s' % (
-        updated_neighbors,
-        new_policy_name
-    )
+        raise
+    return updated_neighbors
 
 
 def get_bgp_config(grpc_client, bgp_config_template):
@@ -173,7 +167,7 @@ def apply_policy(grpc_client, bgp_config):
             err = json.loads(response.errors)
             raise GRPCError(err)
     except GRPCError as e:
-        LOGGER.error(e.message)
+        LOGGER.critical(e.message)
         raise
     except AbortionError:
         LOGGER.critical(
