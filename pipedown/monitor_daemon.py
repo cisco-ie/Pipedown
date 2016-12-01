@@ -36,9 +36,11 @@ LOGGER = log.log()
 def monitor(section, lock, config, health_dict):
     """TODO: Add docstring here.
         Args:
+            section (str): Section name.
             lock (multiprocessing.Lock): Lock to prevent other threads from using gRPC
                                         simultaneously.
             config (MyConfig): The config object for the current config section.
+            health_dict (multiprocessing.Manager): Multi-threaded dictionary.
     """
     #Silence keyboard interrupt signal.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -58,28 +60,26 @@ def monitor(section, lock, config, health_dict):
         result = link_check(sec_config, client)
         #If there are no problems.
         if result is False:
-            lock.acquire()
-            health_dict[section] = False
-            if health_dict['flushed'] is True:
-                LOGGER.warning('Link is back up, adding neighbor...')
-                health_dict['flushed'] = healthy_link(client, sec_config)
-                #We want to alert that the link is back up.
-                alerted = False
-            else:
-                LOGGER.info('Link is good.')
-            lock.release()
+            with lock:
+                health_dict[section] = False
+                if health_dict['flushed'] is True:
+                    LOGGER.warning('Link is back up, adding neighbor...')
+                    health_dict['flushed'] = healthy_link(client, sec_config)
+                    #We want to alert that the link is back up.
+                    alerted = False
+                else:
+                    LOGGER.info('Link is good.')
         #If there is a problem on the link.
         else:
             LOGGER.warning('Link %s is down.', section)
             #If the link is not already flushed.
-            lock.acquire()
-            health_dict[section] = True
-            if health_dict['flushed'] is False:
-                if all(values[1] for values in health_dict.items() if values[0] != 'flushed'):
-                    health_dict['flushed'] = problem_flush(client, sec_config)
-            else:
-                LOGGER.info('Link already flushed.')
-            lock.release()
+            with lock:
+                health_dict[section] = True
+                if health_dict['flushed'] is False:
+                    if all(values[1] for values in health_dict.items() if values[0] != 'flushed'):
+                        health_dict['flushed'] = problem_flush(client, sec_config)
+                else:
+                    LOGGER.info('Link already flushed.')
             if not alerted:
                 alerted = problem_alert(config, section)
 
@@ -139,7 +139,7 @@ def problem_alert(sec_config, section):
     """Alert because there are problems on the link.
 
         Args:
-            sec_config (Section): The Section object for the current config 
+            sec_config (Section): The Section object for the current config
                                   section.
             section (str): String name of section.
 
@@ -192,9 +192,9 @@ def daemon():
     #Spawn process per a section header.
     location = os.path.dirname(os.path.realpath(__file__))
     try:
-        config = MyConfig(os.path.join(location, 'monitor.config'))
+        config = MyConfig(os.path.join(location, 'monitor.config'), LOGGER)
     except ValueError, msg:
-        print msg
+        LOGGER.critical(msg)
         sys.exit(1)
     manager = multiprocessing.Manager()
     health_dict = manager.dict()
@@ -219,7 +219,7 @@ def daemon():
         for job in jobs:
             job.join()
     except KeyboardInterrupt:
-        print "Keyboard interrupt received."
+        "Keyboard interrupt received."
         for job in jobs:
             job.terminate()
             job.join()
