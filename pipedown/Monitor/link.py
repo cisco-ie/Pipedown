@@ -150,9 +150,12 @@ class Link(object):
         """
         return (isinstance(other, Link)
                 and set(self._protocols) == set(other.protocols)
-                and self.destination == other.dest
+                and self.destination == other.destination
                 and self.interface == other.interface
                )
+
+    def __hash__(self):
+        return hash((set(self.protocols), self.destination, self.interface))
 
     def __ne__(self, other):
         return not self.__eq__(other)
