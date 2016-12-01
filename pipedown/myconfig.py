@@ -1,4 +1,5 @@
-from ConfigParser import SafeConfigParser
+from ConfigParser import SafeConfigParser, MissingSectionHeaderError, Error
+import sys
 
 class MyConfig(object):
     """Configuration class for Pipedown config file.
@@ -12,20 +13,32 @@ class MyConfig(object):
        >>> config.BGP.interval
        10
     """
-    def __init__(self, filename):
+    def __init__(self, filename, logger):
         parser = SafeConfigParser()
-        found = parser.read(filename)
+        try:
+            found = parser.read(filename)
+        except MissingSectionHeaderError:
+            logger.critical('Config file contains no section headers')
+            sys.exit(1)
+        except Error, e:
+            logger.critical('Error with config file: %s', e)
+            sys.exit(1)
         if not found:
             raise ValueError('No config file found.')
         section_names = parser.sections()
         sections = {}
         for name in section_names:
-            temp_sec = Section(name, parser)
+            try:
+                temp_sec = Section(name, parser)
+            except KeyError, e:
+                logger.critical('Missing protocol for link.')
+                sys.exit(1)
             #Dashes cause errors down the road.
             if '-' in name:
                 name = name.replace('-', '')
             sections[name] = temp_sec
         self.__dict__.update(sections)
+
 
     def __repr__(self):
         return '{}(sections = {})'.format(
@@ -52,12 +65,12 @@ class Section(object):
                          'pkt_loss',
                          'bw_thres',
                          'grpc_port')
-        except AttributeError:
+        except KeyError:
             #These are optional parameters.
             pass
         try:
             self.__dict__['protocols'] = [self.__dict__['protocols']]
-        except AttributeError:
+        except KeyError:
             #This is NOT an optional parameter.
             raise
 
