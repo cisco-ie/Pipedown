@@ -43,13 +43,10 @@ class Link(object):
     Both IPv6 and IPv4 are supported.
     Raises errors if IP address is not in valid format or protocol is not valid.
 
-    :param destination: The destination IP of the peer router port.
-    :param interface: The outgoing interface IP address.
-    :param protocols: The protocols of the link that should be checked.
-
-    :type destination: str
-    :type interface: str
-    :type protocols: list
+    Args:
+        destination (str): The destination IP of the peer router port.
+        interface (str): The outgoing interface IP address.
+        protocols (list): The protocols of the link that should be checked.
 
     """
     def __init__(self, destination, interface, protocols):
@@ -176,9 +173,8 @@ class Link(object):
     def _check_protocol(protocol):
         """Ensure the protocol entered is valid. Raise ProtocolError
         if invalid.
-
-        :param protocol: The given protocol.
-        :type protocol: str
+        Args:
+            protocol (str): The given protocol.
 
         >>> _check_protocol('isis')
         True
