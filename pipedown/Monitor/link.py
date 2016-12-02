@@ -26,7 +26,7 @@ Author: Lisa Roach
 
 import logging
 import sys
-from validators import Protocol, Address
+from Monitor.validators import Protocol, Address
 
 LOGGER = logging.getLogger()
 
