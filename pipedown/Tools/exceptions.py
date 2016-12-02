@@ -26,13 +26,3 @@ class GRPCError(Exception):
                 self.message = 'A gRPC error occurred: %s.' % message['error-tag']
         except TypeError:  #err is a str instead of a JSON object
             self.message = err
-
-class ProtocolError(Exception):
-    """Raised when an invalid protocol is submitted."""
-    def __init__(self, protocol):
-        self.protocol = protocol
-        if isinstance(self.protocol, str):
-            self.message = "Invalid protocol type '%s'." % protocol
-        else:
-            self.message = 'Protocol must be of type string.'
-

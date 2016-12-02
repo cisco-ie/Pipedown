@@ -21,6 +21,7 @@ import multiprocessing
 import signal
 import os
 import sys
+from netaddr.core import AddrFormatError
 from tabulate import tabulate
 from grpc.framework.interfaces.face.face import AbortionError
 
@@ -30,7 +31,7 @@ from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
 from Monitor.health import health
 from Response import response
-from Tools.exceptions import GRPCError, ProtocolError
+from Tools.exceptions import GRPCError
 
 LOGGER = log.log()
 
@@ -97,8 +98,8 @@ def link_check(sec_config, client):
     LOGGER.info('Checking link health of %s', sec_config.source)
     try:
         link = Link(sec_config.destination, sec_config.source, sec_config.protocols)
-    except ProtocolError as err:
-        LOGGER.critical(err.message)
+    except (TypeError, ValueError, AddrFormatError) as err:
+        LOGGER.critical(err)
         return False
     try:
         result = health(
@@ -188,7 +189,7 @@ def problem_flush(client, sec_config):
         sec_config (Section): The config object for the current config section.
 
     Return:
-         flushed (bool): Updates monitor's flushed to True if the neighborship
+         flushed (bool): Updates monitor's flushed to True if the link
                         is flushed.
     """
     try:
