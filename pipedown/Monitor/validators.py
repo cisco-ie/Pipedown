@@ -46,4 +46,3 @@ class Address(Validator):
             IPAddress(address)
         except AddrFormatError:
             raise
-

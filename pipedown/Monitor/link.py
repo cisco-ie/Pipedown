@@ -50,6 +50,7 @@ class Link(object):
     """
     protocol_options = [
         'isis',
+        'is-is',
         'bgp',
         'mobile',
         'subscriber',

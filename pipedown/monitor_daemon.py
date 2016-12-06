@@ -44,7 +44,7 @@ def monitor(section, lock, config, health_dict):
             config (MyConfig): The config object for the current config section.
             health_dict (multiprocessing.Manager): Multi-threaded dictionary.
     """
-    #Silence keyboard interrupt signal.
+    #Silence keyboard interrupt signal. TODO: Do I need this?
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Access the section in config.
     sec_config = config.__dict__[section]
@@ -59,31 +59,37 @@ def monitor(section, lock, config, health_dict):
         )
     while True:
         #Checking link to data center.
-        result = link_check(sec_config, client)
-        #If there are no problems.
-        if result is False:
-            with lock:
-                health_dict[section] = False
-                if health_dict['flushed'] is True:
-                    LOGGER.warning('Link is back up, adding neighbor...')
-                    health_dict['flushed'] = healthy_link(client, sec_config)
-                    #We want to alert that the link is back up.
-                    alerted = False
-                else:
-                    LOGGER.info('Link is good.')
-        #If there is a problem on the link.
-        else:
-            LOGGER.warning('Link %s is down.', section)
-            #If the link is not already flushed.
-            with lock:
-                health_dict[section] = True
-                if health_dict['flushed'] is False:
-                    if all(values[1] for values in health_dict.items() if values[0] != 'flushed'):
-                        health_dict['flushed'] = problem_flush(client, sec_config)
-                else:
-                    LOGGER.info('Link already flushed.')
-            if not alerted:
-                alerted = problem_alert(config, section)
+        try:
+            result = link_check(sec_config, client)
+            #If there are no problems.
+            if result is False:
+                with lock:
+                    health_dict[section] = False
+                    if health_dict['flushed'] is True:
+                        LOGGER.warning('Link is back up, adding neighbor...')
+                        health_dict['flushed'] = healthy_link(client, sec_config)
+                        #We want to alert that the link is back up.
+                        alerted = False
+                    else:
+                        LOGGER.info('Link is good.')
+            #If there is a problem on the link.
+            else:
+                LOGGER.warning('Link %s is down.', section)
+                #If the link is not already flushed.
+                with lock:
+                    health_dict[section] = True
+                    if health_dict['flushed'] is False:
+                        if all(values[1] for values in health_dict.items()
+                               if values[0] != 'flushed'):
+                            health_dict['flushed'] = problem_flush(client, sec_config)
+                    else:
+                        LOGGER.info('Link already flushed.')
+                if not alerted:
+                    alerted = problem_alert(config, section)
+        except (GRPCError, AbortionError):
+            LOGGER.critical(
+                'GRPC error when checking link health, health cannot be determined.'
+            )
 
 def link_check(sec_config, client):
     """Checks the health of the link.
@@ -112,9 +118,7 @@ def link_check(sec_config, client):
             )
         return result
     except (GRPCError, AbortionError):
-        LOGGER.error(
-            'GRPC error when checking link health, health cannot be determined.'
-        )
+        raise
 
 def healthy_link(client, sec_config):
     """Response when the link is healthy.
@@ -149,7 +153,7 @@ def healthy_link(client, sec_config):
         #Set flushed back to False
         return False
     except (GRPCError, AbortionError):
-        LOGGER.info('No neighbors updated due to GRPC Merge Error.')
+        LOGGER.error('No neighbors updated due to GRPC Merge Error.')
         return True
 
 def problem_alert(sec_config, section):
@@ -214,15 +218,15 @@ def problem_flush(client, sec_config):
                    )
         return True
     except (GRPCError, AbortionError):
-        LOGGER.info('No neighbors updated due to GRPC Merge Error.')
+        LOGGER.error('No neighbors updated due to GRPC Merge Error.')
         return False
 
 def daemon():
     #Spawn process per a section header.
     location = os.path.dirname(os.path.realpath(__file__))
     try:
-        config = MyConfig(os.path.join(location, 'monitor.config'), LOGGER)
-    except ValueError, msg:
+        config = MyConfig(os.path.join(location, 'monitor.config'))
+    except (ValueError, KeyError) as msg:
         LOGGER.critical(msg)
         sys.exit(1)
     manager = multiprocessing.Manager()
@@ -248,7 +252,7 @@ def daemon():
         for job in jobs:
             job.join()
     except KeyboardInterrupt:
-        "Keyboard interrupt received."
+        print 'Keyboard interrupt received.'
         for job in jobs:
             job.terminate()
             job.join()

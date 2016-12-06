@@ -1,8 +1,11 @@
-from ConfigParser import SafeConfigParser, MissingSectionHeaderError, Error
+try:
+    from ConfigParser import SafeConfigParser, MissingSectionHeaderError, NoSectionError
+except ImportError:
+    from configparser import SafeConfigParser, MissingSectionHeaderError, NoSectionError
 import sys
 
 class MyConfig(object):
-    """Configuration class for Pipedown config file.
+    """Configuration class for Pipedown config file
        Adds a dictionary of Section objects to __dict__, making it accessible
        by dot notation.
 
@@ -13,32 +16,29 @@ class MyConfig(object):
        >>> config.BGP.interval
        10
     """
-    def __init__(self, filename, logger):
+
+    def __init__(self, filename):
         parser = SafeConfigParser()
         try:
             found = parser.read(filename)
-        except MissingSectionHeaderError:
-            logger.critical('Config file contains no section headers')
-            sys.exit(1)
-        except Error, e:
-            logger.critical('Error with config file: %s', e)
-            sys.exit(1)
+        except (MissingSectionHeaderError, NoSectionError):
+            raise
         if not found:
             raise ValueError('No config file found.')
         section_names = parser.sections()
-        sections = {}
+        if len(section_names) == 0:
+            raise ValueError('File contains no section headers.')
+        self.sections = {}
         for name in section_names:
             try:
                 temp_sec = Section(name, parser)
-            except KeyError, e:
-                logger.critical('Missing protocol for link.')
-                sys.exit(1)
+            except KeyError:
+                raise
             #Dashes cause errors down the road.
             if '-' in name:
                 name = name.replace('-', '')
-            sections[name] = temp_sec
-        self.__dict__.update(sections)
-
+            self.sections[name] = temp_sec
+        self.__dict__.update(self.sections)
 
     def __repr__(self):
         return '{}(sections = {})'.format(
@@ -69,7 +69,7 @@ class Section(object):
             #These are optional parameters.
             pass
         try:
-            self.__dict__['protocols'] = [self.__dict__['protocols']]
+            self.__dict__['protocols'] = [self.__dict__['protocol']]
         except KeyError:
             #This is NOT an optional parameter.
             raise

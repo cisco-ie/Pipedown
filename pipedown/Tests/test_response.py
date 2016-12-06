@@ -37,13 +37,10 @@ class ResponseTestCase(unittest.TestCase, object):
             self.neighbor_as,
             self.policy_name
             )
-        correct_neigh = json.dumps(
-            [
-                ['11.1.1.20', 'ipv4-unicast', 'pass'],
-                ['11.1.1.20', 'ipv6-unicast', 'pass']
-            ]
-        )
-        correct_neigh = 'Updated neighbors and policy: %s' % correct_neigh
+        correct_neigh = [
+            (u'11.1.1.20', u'ipv4-unicast', u'pass', 'drop'),
+            (u'11.1.1.20', u'ipv6-unicast', u'pass', 'drop')
+        ]
         self.assertEqual(updated_neigh, correct_neigh)
         get_mock.assert_called_with(
             self.grpc_client,
@@ -55,25 +52,19 @@ class ResponseTestCase(unittest.TestCase, object):
         error_tag = read_file('Examples/Errors/grpc-tag.txt')
         error_msg = read_file('Examples/Errors/grpc-message.txt')
         apply_mock.side_effect = GRPCError(error_tag)
-        updated_neigh = response.cisco_update(
-            self.grpc_client,
-            self.neighbor_as,
-            self.policy_name
-            )
-        self.assertEqual(
-            updated_neigh,
-            'No neighbors updated due to GRPC Merge Error.'
-            )
+        with self.assertRaises(GRPCError):
+            updated_neigh = response.cisco_update(
+                self.grpc_client,
+                self.neighbor_as,
+                self.policy_name
+                )
         get_mock.side_effect = GRPCError(error_msg)
-        updated_neigh = response.cisco_update(
-            self.grpc_client,
-            self.neighbor_as,
-            self.policy_name
-            )
-        self.assertEqual(
-            updated_neigh,
-            'No neighbors updated due to GRPC Get Error.'
-            )
+        with self.assertRaises(GRPCError):
+            updated_neigh = response.cisco_update(
+                self.grpc_client,
+                self.neighbor_as,
+                self.policy_name
+                )
 
     @patch('Response.response.get_bgp_config')
     @patch('Response.response.apply_policy')
@@ -86,38 +77,29 @@ class ResponseTestCase(unittest.TestCase, object):
             self.neighbor_as,
             self.policy_name
             )
-        correct_neigh = json.dumps(
-            [
-                ['11.1.1.20', 'ipv4-unicast', 'pass'],
-                ['11.1.1.20', 'ipv6-unicast', 'pass']
-            ]
-        )
-        correct_neigh = 'Updated neighbors and policy: %s' % correct_neigh
+        correct_neigh = [
+            (u'11.1.1.20', u'ipv4-unicast', u'pass', 'drop'),
+            (u'11.1.1.20', u'ipv6-unicast', u'pass', 'drop')
+        ]
         self.assertEqual(updated_neigh, correct_neigh)
 
         error_tag = read_file('Examples/Errors/grpc-tag.txt')
         error_msg = read_file('Examples/Errors/grpc-message.txt')
         # Test when GRPC throws an error on merge.
         apply_mock.side_effect = GRPCError(error_msg)
-        updated_neigh = response.open_config_update(
-            self.grpc_client,
-            self.neighbor_as,
-            self.policy_name
-            )
-        self.assertEqual(
-            updated_neigh,
-            'No neighbors updated due to GRPC Merge Error.'
-            )
+        with self.assertRaises(GRPCError):
+            updated_neigh = response.open_config_update(
+                self.grpc_client,
+                self.neighbor_as,
+                self.policy_name
+                )
         get_mock.side_effect = GRPCError(error_tag)
-        updated_neigh = response.open_config_update(
-            self.grpc_client,
-            self.neighbor_as,
-            self.policy_name
-            )
-        self.assertEqual(
-            updated_neigh,
-            'No neighbors updated due to GRPC Get Error.'
-            )
+        with self.assertRaises(GRPCError):
+            updated_neigh = response.open_config_update(
+                self.grpc_client,
+                self.neighbor_as,
+                self.policy_name
+                )
 
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getconfig')
     @patch('Response.response.LOGGER')
