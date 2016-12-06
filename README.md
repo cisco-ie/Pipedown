@@ -18,6 +18,10 @@ The application solves the end goal by checking a link that connects back to the
 
 Cisco IOS-XR box running version 6.1.2.12i and above.
 
+Pipedown is meant to be run in a Linux container on the IOS-XR. It has been tested on an Ubuntu 14.04 container running Python 2.7. If you run Pipedown in a different scenario we welcome any feedback you have.
+
+Pipedown attempts to be compatible with Python 3 wherever possible, but since gRPC does not officially support Python 3 yet Python 2.7 should be used. 
+
 #### Current Limitations:
 
 Currently for monitoring multiple links, each link needs to have its own source ip address.
