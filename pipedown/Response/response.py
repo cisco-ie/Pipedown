@@ -31,7 +31,7 @@ LOGGER = logging.getLogger()
 
 
 def cisco_update(grpc_client, neighbor_as, new_policy_name):
-    """Initiate the GRPC client to perform the neighbor removal and commits, 
+    """Initiate the GRPC client to perform the neighbor removal and commits,
     using Cisco YANG models.
 
     Args:
@@ -47,7 +47,7 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
     try:
         bgp_config = get_bgp_config(grpc_client, bgp_config_template)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Get Error.'
+        raise
     # Drill down to the neighbors to be flushed or added.
     bgp_config = json.loads(bgp_config)
     neighbors = bgp_config['Cisco-IOS-XR-ipv4-bgp-cfg:bgp']['instance'][0]
@@ -68,16 +68,15 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
                     (
                         neighbor['neighbor-address'],
                         ipv['af-name'],
-                        curr_policy
+                        curr_policy,
+                        new_policy_name
                         )
                     )
     try:
         apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Merge Error.'
-    updated_neighbors = json.dumps(updated_neighbors)
-    return 'Updated neighbors and policy: %s' % updated_neighbors
-
+        raise
+    return updated_neighbors
 
 def open_config_update(grpc_client, neighbor_as, new_policy_name):
     """Flush_BGP object that will initiate the GRPC client to perform the
@@ -90,14 +89,13 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
 
     Returns:
         str: Updated neighbors' IPs and the policy that changed.
-
     """
     bgp_config_template = '{"openconfig-bgp:bgp": {"neighbors": [null]}}'
     # Get the BGP config.
     try:
         bgp_config = get_bgp_config(grpc_client, bgp_config_template)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Get Error.'
+        raise
     # Drill down to the neighbors to be flushed.
     bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
     updated_neighbors = []
@@ -115,15 +113,15 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
                     (
                         neighbor['neighbor-address'],
                         ipv['afi-safi-name'],
-                        curr_policy
+                        curr_policy,
+                        new_policy_name
+                        )
                     )
-                )
     try:
         apply_policy(grpc_client, bgp_config)
     except (GRPCError, AbortionError):
-        return 'No neighbors updated due to GRPC Merge Error.'
-    updated_neighbors = json.dumps(updated_neighbors)
-    return 'Updated neighbors and policy: %s' % updated_neighbors
+        raise
+    return updated_neighbors
 
 
 def get_bgp_config(grpc_client, bgp_config_template):
@@ -152,7 +150,7 @@ def get_bgp_config(grpc_client, bgp_config_template):
 
 def apply_policy(grpc_client, bgp_config):
     """Apply the new BGP policy by using gRPC.
-    
+
     Args:
         grpc_client (CiscoGRPCClient): the initiated GRPC client.
         bgp_config (dict): Updated YANG model with new policy.
@@ -169,7 +167,7 @@ def apply_policy(grpc_client, bgp_config):
             err = json.loads(response.errors)
             raise GRPCError(err)
     except GRPCError as e:
-        LOGGER.error(e.message)
+        LOGGER.critical(e.message)
         raise
     except AbortionError:
         LOGGER.critical(
@@ -177,43 +175,58 @@ def apply_policy(grpc_client, bgp_config):
             )
         raise
 
-def alert(model, arg, reply):
-    """Alert the user (email or console) if there is an error.
+def email_alert(email_address, message):
+    """Send an email alert that the link is down.
+
+    Args:
+        email_address (str): The email address to contact.
+        message (str): The message to send.
+
+    Response:
+        None
     """
-    message = 'Link is down, check router: ' + reply
-    if model == 'text':
-        phone_number = arg
-        token = '416978636d5774754655457466614d6f6a4a4574464c4941584777475a7870496758446f5775474f65535176'
-        url = 'http://api.tropo.com/1.0/sessions'
-        payload = {'token':token, 'msg':message, 'phone_number':phone_number}
-        req = requests.post(url, data=json.dumps(payload))
-        if req.status_code != 200:
-            LOGGER.error(req.text)
-            return
-        else:
-            return 'Successfully sent Text Message'
-    elif model == 'email':
-        m_from = 'kkumara3@cisco.com'
-        m_to = arg
-        log = open('router_connected.log', 'rb')
-        msg = MIMEText(log.read())
-        log.close()
-        msg['Subject'] = message
-        msg['From'] = m_from
-        msg['To'] = m_to
-        send = smtplib.SMTP('outbound.cisco.com')
-        send.sendmail(m_from, [m_to], msg.as_string())
-        send.quit()
-        return 'Successfully sent Email'
+    m_from = 'nobody@cisco.com'
+    log = open('router_connected.log', 'rb')
+    msg = MIMEText(log.read())
+    log.close()
+    msg['Subject'] = message
+    msg['From'] = m_from
+    msg['To'] = email_address
+    send = smtplib.SMTP('outbound.cisco.com')
+    #email_address is a list, make sure to break it up like one <--------------------####
+    send.sendmail(m_from, email_address, msg.as_string())
+    send.quit()
+
+def text_alert(phone_number, message):
+    """Send text message alert for link status.
+
+    Args:
+        phone_number (str): Phone number to text.
+        reply (str): The message to send.
+
+    Response:
+        None
+    """
+    token = '416978636d5774754655457466614d6f6a4a4574464c4941584777475a7870496758446f5775474f65535176'
+    url = 'http://api.tropo.com/1.0/sessions'
+    payload = {'token':token, 'msg':message, 'phone_number':phone_number}
+    req = requests.post(url, data=json.dumps(payload))
+    if req.status_code != 200:
+        LOGGER.error(req.text)
 
 def model_selection(model, client, neighbor_as, policy_name):
     """Based on the model-type selected in the configuration file, call the
        correct function.
-       Will contain a switch statement of all the functions (cisco_flush,
-       open_config_update, etc.).
+        As support for more models are added they will get added to the
+        dictionary for selection.
 
-       If someone wants to add a response option, they will add the function
-       to this module and add to the switch statement here.
+        Args:
+            grpc_client (CiscoGRPCClient): the initiated GRPC client.
+            neighbor_as (list): List of neighbor AS numbers.
+            policy_name (str): Name of the new policy.
+
+        Return:
+            str: The updated neighbors plus a string message.
     """
     # Putting string of AS into a list
     neighbor_as = neighbor_as.split()
@@ -222,4 +235,5 @@ def model_selection(model, client, neighbor_as, policy_name):
         'cisco': cisco_update,
         'openconfig': open_config_update,
     }
+    #Call the correct function and return its return value.
     return functions[model](client, neighbor_as, policy_name)

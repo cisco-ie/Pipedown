@@ -1,8 +1,8 @@
 import unittest
 import os
 from mock import patch, Mock
+from netaddr.core import AddrFormatError
 
-import log
 from Monitor.link import Link
 from Monitor import health
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
@@ -12,7 +12,7 @@ def read_file(filename):
 
     Args:
         filename (str): The filename
-  
+
     Returns:
         str: Read file.
     """
@@ -20,6 +20,7 @@ def read_file(filename):
     with open(os.path.join(location, filename)) as f:
         return f.read()
 
+@patch('Monitor.health.LOGGER')
 class HealthTestCase(unittest.TestCase, object):
     @staticmethod
     def read_file(filepath):
@@ -34,10 +35,8 @@ class HealthTestCase(unittest.TestCase, object):
         cls.ipv4_link = Link('10.1.1.1', '10.1.1.2', ['BGP', 'ISIS'])
         cls.ipv6_link = Link('10:1:1::1', '10:1:1::2', ['BGP', 'OSPF'])
 
-
     @patch('Monitor.health.subprocess.Popen.communicate')
-    @patch('Monitor.health.LOGGER')
-    def test_iperf_v4(self, mock_logger, mock_communicate):
+    def test_iperf_v4(self, mock_communicate, mock_logger):
         err = 'read failed: Connection refused\n'
         mock_communicate.return_value = ['', err]
         response = health.run_iperf(self.ipv4_link, 10, 20, 5, 5)
@@ -53,8 +52,7 @@ class HealthTestCase(unittest.TestCase, object):
         self.assertTrue(health.run_iperf(self.ipv4_link))
 
     @patch('Monitor.health.subprocess.Popen.communicate')
-    @patch('Monitor.health.LOGGER')
-    def test_iperf_v6(self, mock_logger, mock_communicate):
+    def test_iperf_v6(self, mock_communicate, mock_logger):
         err = 'read failed: Connection refused\n'
         mock_communicate.return_value = ['', err]
         response = health.run_iperf(self.ipv6_link)
@@ -71,7 +69,7 @@ class HealthTestCase(unittest.TestCase, object):
 
     @patch('Monitor.health.check_rib')
     @patch('Monitor.health.run_iperf')
-    def test_health_v4(self, mock_iperf, mock_routing):
+    def test_health_v4(self, mock_iperf, mock_routing, mock_logger):
         #Problem with the link.
         mock_routing.return_value = True
         self.assertTrue(health.health(self.ipv4_link, self.grpc_client))
@@ -87,7 +85,7 @@ class HealthTestCase(unittest.TestCase, object):
 
     @patch('Monitor.health.check_rib')
     @patch('Monitor.health.run_iperf')
-    def test_health_v6(self, mock_iperf, mock_routing):
+    def test_health_v6(self, mock_iperf, mock_routing, mock_logger):
         #Problem with the link.
         mock_routing.return_value = True
         self.assertTrue(health.health(self.ipv6_link, self.grpc_client))
@@ -101,28 +99,18 @@ class HealthTestCase(unittest.TestCase, object):
         mock_iperf.return_value = True
         self.assertTrue(health.health(self.ipv6_link, self.grpc_client))
 
-    def test_check_protocol(self):
-        from Tools.exceptions import ProtocolError
-        with self.assertRaises(ProtocolError):
-            self.ipv4_link._check_protocol('')
-            self.ipv4_link._check_protocol('bad')
-            self.ipv4_link._check_protocol('\n')
-        self.assertIsNone(self.ipv4_link._check_protocol('bgp'))
-        self.assertIsNone(self.ipv4_link._check_protocol('isis'))
-
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
-    @patch('Monitor.health.LOGGER')
-    def test_check_rib_v4(self, mock_logger, mock_get):
+    def test_check_rib_v4(self, mock_get, mock_logger):
         output_good = self.read_file('Examples/RIB/protocol-active.txt')
-        mock_get.return_value = '', output_good
+        mock_get.return_value = ['', output_good]
         self.assertTrue(health.check_rib(self.ipv4_link, self.grpc_client))
 
         output_bad = self.read_file('Examples/RIB/bad-protocol.txt')
-        mock_get.return_value = '', output_bad
+        mock_get.return_value = ['', output_bad]
         self.assertTrue(health.check_rib(self.ipv4_link, self.grpc_client))
 
         output_bad = self.read_file('Examples/RIB/non-active.txt')
-        mock_get.return_value = '', output_bad
+        mock_get.return_value = ['', output_bad]
         self.assertTrue(health.check_rib(self.ipv4_link, self.grpc_client))
 
         error_tag = read_file('Examples/Errors/grpc-tag.txt')
@@ -145,8 +133,7 @@ class HealthTestCase(unittest.TestCase, object):
             self.assertTrue(mock_logger.error.called)
 
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.getoper')
-    @patch('Monitor.health.LOGGER')
-    def test_check_rib_v6(self, mock_logger, mock_get):
+    def test_check_rib_v6(self, mock_get, mock_logger):
         output_good = self.read_file('Examples/RIB/protocol-active.txt')
         mock_get.return_value = '', output_good
         self.assertTrue(health.check_rib(self.ipv6_link, self.grpc_client))
@@ -175,6 +162,41 @@ class HealthTestCase(unittest.TestCase, object):
             mock_get.return_value = err, output_bad
             health.check_rib(self.ipv6_link, self.grpc_client)
             self.assertTrue(mock_logger.error.called)
+
+
+@patch('Monitor.health.LOGGER')
+class LinkTestCase(unittest.TestCase, object):
+    def test_bad_protocols(self, mock_logger):
+        with self.assertRaises(ValueError):
+            Link('10.1.1.1', '10.1.1.2', ['BGP', 'bad', 'ISIS'])
+            self.assertTrue(mock_logger.error.called)
+            Link('10:1:1::1', '10:1:1::2', ['BGP', 'OSPF', 'bad'])
+            self.assertTrue(mock_logger.error.called)
+
+        with self.assertRaises(TypeError):
+            Link('10.1.1.1', '10.1.1.2', ['BGP', 22, 'ISIS'])
+            self.assertTrue(mock_logger.error.called)
+            Link('10:1:1::1', '10:1:1::2', ['BGP', 'OSPF', 90.1])
+            self.assertTrue(mock_logger.error.called)
+
+    def test_bad_ips(self, mock_logger):
+        with self.assertRaises(AddrFormatError):
+            Link('10.1.500.1', '10.1.1.2', ['BGP', 'bad', 'ISIS'])
+            self.assertTrue(mock_logger.error.called)
+            Link('10:1:1:1:1:1', '10:1:1::2', ['BGP', 'OSPF', 'bad'])
+            self.assertTrue(mock_logger.error.called)
+
+        with self.assertRaises(TypeError):
+            Link(10.200, '10.1.1.2', ['BGP', 'bad', 'ISIS'])
+            self.assertTrue(mock_logger.error.called)
+            Link(True, '10:1:1::2', ['BGP', 'OSPF', 'bad'])
+            self.assertTrue(mock_logger.error.called)
+
+    def test_good(self, mock_logger):
+        ipv4_link = Link('10.1.1.1', '10.1.1.2', ['BGP', 'IS-IS'])
+        self.assertIsInstance(ipv4_link, Link)
+        ipv6_link = Link('10:1:1::1', '10:1:1::2', ['BGP', 'OSPF'])
+        self.assertIsInstance(ipv6_link, Link)
 
 if __name__ == '__main__':
     unittest.main()

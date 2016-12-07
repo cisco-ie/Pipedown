@@ -24,14 +24,12 @@ Works in python 2.7 and Python 3+.
 Author: Lisa Roach
 """
 
-from Tools.exceptions import ProtocolError
-
 import logging
 import sys
-from netaddr import IPAddress
-from netaddr.core import AddrFormatError
+from Monitor.validators import Protocol, Address
 
 LOGGER = logging.getLogger()
+
 
 def _not_valid():
     if sys.version_info[0] >= 3:
@@ -44,76 +42,44 @@ class Link(object):
     Both IPv6 and IPv4 are supported.
     Raises errors if IP address is not in valid format or protocol is not valid.
 
-    :param destination: The destination IP of the peer router port.
-    :param interface: The outgoing interface IP address.
-    :param protocols: The protocols of the link that should be checked.
-
-    :type destination: str
-    :type interface: str
-    :type protocols: list
+    Args:
+        destination (str): The destination IP of the peer router port.
+        interface (str): The outgoing interface IP address.
+        protocols (list): The protocols of the link that should be checked.
 
     """
+    protocol_options = [
+        'isis',
+        'is-is',
+        'bgp',
+        'mobile',
+        'subscriber',
+        'connected',
+        'dagr',
+        'rip',
+        'ospf',
+        'static',
+        'rpl',
+        'eigrp',
+        'local',
+    ]
+
+    interface = Address()
+    destination = Address()
+    protocols = Protocol(*protocol_options)
+
     def __init__(self, destination, interface, protocols):
         self.interface = interface
         self.destination = destination
         self.protocols = protocols
-        #Detect IPv4 or IPv6 for interface.
-        if ':' in interface:
-            self.version = 6
+
+    @property
+    def version(self):
+        """Detects what version (4 or 6) the IP Address is."""
+        if ':' in self.interface:
+            return 6
         else:
-            self.version = 4
-
-    @property
-    def interface(self):
-        return self._interface
-
-    @interface.setter
-    def interface(self, interface):
-        try:
-            #Check validity of interface address.
-            IPAddress(interface)
-            self._interface = interface
-        except (AddrFormatError, TypeError) as e:
-            LOGGER.critical(e)
-            raise
-
-    @property
-    def destination(self):
-        return self._dest
-
-    @destination.setter
-    def destination(self, destination):
-        """Check if the IPs are in correct format."""
-        try:
-            #Check validity of interface address.
-            IPAddress(destination)
-            self._dest = destination
-        except (AddrFormatError, TypeError) as e:
-            LOGGER.critical(e)
-            raise
-
-    @property
-    def protocols(self):
-        return self._protocols
-
-    @protocols.setter
-    def protocols(self, protocols):
-        """Only set the protocols if they are valid."""
-        self._protocols = []
-        try:
-            for protocol in protocols:
-                self._check_protocol(protocol.lower())
-                #If it is is-is remove the '-'
-                if '-' in protocol:
-                    protocol = protocol.replace('-', '')
-                #If they are valid protocols, set them.
-                self.protocols.append(protocol.lower())
-        except ProtocolError as e:
-            LOGGER.critical(e.message)
-            raise
-        except TypeError as e:
-            LOGGER.critical(e)
-            raise
+            return 4
 
     def __repr__(self):
         return '{}(destination = {}, interface = {}, protocols = {})'.format(
@@ -152,10 +118,13 @@ class Link(object):
 
         """
         return (isinstance(other, Link)
-                and set(self._protocols) == set(other.protocols)
-                and self.destination == other.dest
+                and set(self.protocols) == set(other.protocols)
+                and self.destination == other.destination
                 and self.interface == other.interface
                )
+
+    def __hash__(self):
+        return hash((set(self.protocols), self.destination, self.interface))
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -171,43 +140,3 @@ class Link(object):
 
     def __le__(self, other):
         return _not_valid()
-
-    @staticmethod
-    def _check_protocol(protocol):
-        """Ensure the protocol entered is valid. Raise ProtocolError
-        if invalid.
-
-        :param protocol: The given protocol.
-        :type protocol: str
-
-        >>> _check_protocol('isis')
-        True
-        >>> _check_protocol('')
-        False
-        >>> _check_protocol(9)
-        False
-        >>> _check_protocol('bpg')
-        False
-
-        """
-        if isinstance(protocol, str):
-            protocols = [
-                'isis',
-                'is-is',
-                'bgp',
-                'mobile',
-                'subscriber',
-                'connected',
-                'dagr',
-                'rip',
-                'ospf',
-                'static',
-                'rpl',
-                'eigrp',
-                'local',
-            ]
-            if not protocol in protocols:
-                raise ProtocolError(protocol)
-        else:
-            raise ProtocolError(protocol)
-
