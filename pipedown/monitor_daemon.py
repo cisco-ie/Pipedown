@@ -69,8 +69,8 @@ def monitor(section, lock, config, health_dict):
                         LOGGER.warning('Link is back up, adding neighbor...')
                         health_dict['flushed'] = link_response(client, sec_config, False)
                         #We want to alert that the link is back up.
+                        alert_response(config, section, 'up')
                         alerted = False
-                        alerted = alert_response(config, section, True)
                     else:
                         LOGGER.info('Link is good.')
             #If there is a problem on the link.
@@ -86,7 +86,7 @@ def monitor(section, lock, config, health_dict):
                     else:
                         LOGGER.info('Link already flushed.')
                 if not alerted:
-                    alerted = alert_response(config, section, True)
+                    alerted = alert_response(config, section, 'down')
         except (GRPCError, AbortionError):
             LOGGER.critical(
                 'GRPC error when checking link health, health cannot be determined.'
@@ -161,35 +161,31 @@ def link_response(client, sec_config, result):
         LOGGER.error('No neighbors updated due to GRPC Merge Error.')
         return not bool(result)
 
-def alert_response(sec_config, section, result):
+def alert_response(sec_config, section, status):
     """Alert because there are problems on the link.
 
         Args:
             sec_config (Section): The Section object for the current config
                                   section.
             section (str): String name of section.
+            status (str): The status of the link: up or down.
 
         Return:
             alerted (bool): Sets alerted to True if an alert was sent.
     """
     alerted = False
+    message = '%r link is %s on %r' % (section, status, sec_config.hostname)
     try:
-        response.text_alert(
-            sec_config.text_alert, section, result, sec_config.hostname
-            )
+        response.text_alert(sec_config.text_alert, message)
         #Prevent spamming the alert.
         alerted = True
     except AttributeError:
         #There is no text_alert option
         pass
     try:
-        response.email_alert(
-            sec_config.email_alert, section, result, sec_config.hostname
-            )
-        #Prevent spamming the alert.
+        response.email_alert(sec_config.email_alert, message)
         alerted = True
     except AttributeError:
-        #There is no email alert option.
         pass
     return alerted
 
@@ -224,7 +220,7 @@ def daemon():
         for job in jobs:
             job.join()
     except KeyboardInterrupt:
-        print 'Keyboard interrupt received.'
+        print('Keyboard interrupt received.')
         for job in jobs:
             job.terminate()
             job.join()

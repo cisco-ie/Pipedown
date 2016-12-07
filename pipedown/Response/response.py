@@ -175,17 +175,16 @@ def apply_policy(grpc_client, bgp_config):
             )
         raise
 
-def email_alert(email_address, reply):
+def email_alert(email_address, message):
     """Send an email alert that the link is down.
 
     Args:
         email_address (str): The email address to contact.
-        reply (str): The section name of the link.
+        message (str): The message to send.
 
     Response:
         None
     """
-    message = reply + 'link is down, check router.'
     m_from = 'nobody@cisco.com'
     log = open('router_connected.log', 'rb')
     msg = MIMEText(log.read())
@@ -198,17 +197,16 @@ def email_alert(email_address, reply):
     send.sendmail(m_from, email_address, msg.as_string())
     send.quit()
 
-def text_alert(phone_number, reply):
+def text_alert(phone_number, message):
     """Send text message alert for link status.
 
     Args:
         phone_number (str): Phone number to text.
-        reply (str): The section name of the Link.
+        reply (str): The message to send.
 
     Response:
         None
     """
-    message = reply + 'link is down, check router.'
     token = '416978636d5774754655457466614d6f6a4a4574464c4941584777475a7870496758446f5775474f65535176'
     url = 'http://api.tropo.com/1.0/sessions'
     payload = {'token':token, 'msg':message, 'phone_number':phone_number}
