@@ -164,6 +164,7 @@ class HealthTestCase(unittest.TestCase, object):
             health.check_rib(self.ipv6_link, self.grpc_client)
             self.assertTrue(mock_logger.error.called)
 
+
 @patch('Monitor.health.LOGGER')
 class LinkTestCase(unittest.TestCase, object):
     def test_bad_protocols(self, mock_logger):

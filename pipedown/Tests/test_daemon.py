@@ -24,7 +24,7 @@ class MyConfigTestCase(unittest.TestCase, object):
             self.config_path
         )
         config = monitor_daemon.MyConfig(self.config_path)
-        self.assertEqual(config.sections.keys(), ['BGP'])
+        self.assertEqual(config.__dict__.keys(), ['BGP'])
 
     def test_grab_sections_multiplesections(self):
         copyfile(
@@ -32,7 +32,7 @@ class MyConfigTestCase(unittest.TestCase, object):
             self.config_path
         )
         config = monitor_daemon.MyConfig(self.config_path)
-        self.assertItemsEqual(config.sections.keys(), ['BGP', 'ISIS'])
+        self.assertItemsEqual(config.__dict__.keys(), ['BGP', 'ISIS'])
 
     def test_grab_sections_no_section(self):
         copyfile(
@@ -98,9 +98,21 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
         )
         result = monitor_daemon.link_response(self.grpc_client, self.sec_config, True)
         self.assertFalse(result)
+        mock_grpc.assert_called_with(
+            self.sec_config.yang,
+            self.grpc_client,
+            self.sec_config.flush_bgp_as,
+            self.sec_config.drop_policy_name
+        )
         self.assertTrue(mock_logger.error.called)
 
         result = monitor_daemon.link_response(self.grpc_client, self.sec_config, False)
+        mock_grpc.assert_called_with(
+            self.sec_config.yang,
+            self.grpc_client,
+            self.sec_config.flush_bgp_as,
+            self.sec_config.pass_policy_name
+        )
         self.assertTrue(result)
         self.assertTrue(mock_logger.error.called)
 
