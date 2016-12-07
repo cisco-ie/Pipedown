@@ -48,6 +48,12 @@ def monitor(section, lock, config, health_dict):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Access the section in config.
     sec_config = config.__dict__[section]
+    #Will call alert if there is an alert.
+    if hasattr(sec_config, 'text_alert') or hasattr(sec_config, 'email_alert'):
+        alert = True
+    else:
+        alert = False
+    #Marks that an alert has not been sent (prevents spam).
     alerted = False
     #Set up a gRPC client.
     client = CiscoGRPCClient(
@@ -70,8 +76,9 @@ def monitor(section, lock, config, health_dict):
                         LOGGER.warning('Link is back up, adding neighbor...')
                         health_dict['flushed'] = link_response(client, sec_config, False)
                         #We want to alert that the link is back up.
-                        alert_response(sec_config, section, 'up')
-                        alerted = False
+                        if alert:
+                            alert_response(sec_config, section, 'up')
+                            alerted = False
                     else:
                         LOGGER.info('Link is good.')
             #If there is a problem on the link.
@@ -86,7 +93,7 @@ def monitor(section, lock, config, health_dict):
                             health_dict['flushed'] = link_response(client, sec_config, True)
                     else:
                         LOGGER.info('Link already flushed.')
-                if not alerted:
+                if alert and not alerted:
                     alerted = alert_response(sec_config, section, 'down')
         except (GRPCError, AbortionError):
             LOGGER.critical(
@@ -106,7 +113,7 @@ def link_check(sec_config, client):
     try:
         link = Link(sec_config.destination, sec_config.source, sec_config.protocols)
     except (TypeError, ValueError, AddrFormatError) as err:
-        LOGGER.critical(err)
+        LOGGER.critical('Error with monitor.config: %s', err)
         return False
     try:
         result = health(
@@ -178,7 +185,19 @@ def alert_response(sec_config, section, status):
             alerted (bool): Sets alerted to True if an alert was sent.
     """
     alerted = False
-    message = '%r link is %s on %r' % (section, status, sec_config.hostname)
+    try:
+        message = '%r link is %s on %r' % (
+            section,
+            status,
+            sec_config.hostname
+            )
+    except AttributeError:
+        LOGGER.error('Missing router hostname.')
+        message = '%r link is %s on %r' % (
+            section,
+            status,
+            '(missing hostname)'
+            )
     try:
         response.text_alert(sec_config.text_alert, message)
         #Prevent spamming the alert.
