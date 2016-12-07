@@ -87,7 +87,7 @@ def monitor(section, lock, config, health_dict):
                     else:
                         LOGGER.info('Link already flushed.')
                 if not alerted:
-                    alerted = alert_response(config, section, 'down')
+                    alerted = alert_response(sec_config, section, 'down')
         except (GRPCError, AbortionError):
             LOGGER.critical(
                 'GRPC error when checking link health, health cannot be determined.'
