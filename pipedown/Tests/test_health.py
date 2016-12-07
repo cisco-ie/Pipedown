@@ -3,7 +3,6 @@ import os
 from mock import patch, Mock
 from netaddr.core import AddrFormatError
 
-import log
 from Monitor.link import Link
 from Monitor import health
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
@@ -169,28 +168,28 @@ class HealthTestCase(unittest.TestCase, object):
 class LinkTestCase(unittest.TestCase, object):
     def test_bad_protocols(self, mock_logger):
         with self.assertRaises(ValueError):
-            ipv4_link = Link('10.1.1.1', '10.1.1.2', ['BGP', 'bad', 'ISIS'])
+            Link('10.1.1.1', '10.1.1.2', ['BGP', 'bad', 'ISIS'])
             self.assertTrue(mock_logger.error.called)
-            ipv6_link = Link('10:1:1::1', '10:1:1::2', ['BGP', 'OSPF', 'bad'])
+            Link('10:1:1::1', '10:1:1::2', ['BGP', 'OSPF', 'bad'])
             self.assertTrue(mock_logger.error.called)
 
         with self.assertRaises(TypeError):
-            ipv4_link = Link('10.1.1.1', '10.1.1.2', ['BGP', 22, 'ISIS'])
+            Link('10.1.1.1', '10.1.1.2', ['BGP', 22, 'ISIS'])
             self.assertTrue(mock_logger.error.called)
-            ipv6_link = Link('10:1:1::1', '10:1:1::2', ['BGP', 'OSPF', 90.1])
+            Link('10:1:1::1', '10:1:1::2', ['BGP', 'OSPF', 90.1])
             self.assertTrue(mock_logger.error.called)
 
     def test_bad_ips(self, mock_logger):
         with self.assertRaises(AddrFormatError):
-            ipv4_link = Link('10.1.500.1', '10.1.1.2', ['BGP', 'bad', 'ISIS'])
+            Link('10.1.500.1', '10.1.1.2', ['BGP', 'bad', 'ISIS'])
             self.assertTrue(mock_logger.error.called)
-            ipv6_link = Link('10:1:1:1:1:1', '10:1:1::2', ['BGP', 'OSPF', 'bad'])
+            Link('10:1:1:1:1:1', '10:1:1::2', ['BGP', 'OSPF', 'bad'])
             self.assertTrue(mock_logger.error.called)
 
         with self.assertRaises(TypeError):
-            ipv4_link = Link(10.200, '10.1.1.2', ['BGP', 'bad', 'ISIS'])
+            Link(10.200, '10.1.1.2', ['BGP', 'bad', 'ISIS'])
             self.assertTrue(mock_logger.error.called)
-            ipv6_link = Link(True, '10:1:1::2', ['BGP', 'OSPF', 'bad'])
+            Link(True, '10:1:1::2', ['BGP', 'OSPF', 'bad'])
             self.assertTrue(mock_logger.error.called)
 
     def test_good(self, mock_logger):
