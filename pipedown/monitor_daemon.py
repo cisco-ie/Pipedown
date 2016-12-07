@@ -137,11 +137,15 @@ def link_response(client, sec_config, result):
         original policy, sets Flushed to True if the link is flushed.
     """
     try:
+        if result is False:
+            new_policy = sec_config.pass_policy_name
+        else:
+            new_policy = sec_config.drop_policy_name
         reply = response.model_selection(
             sec_config.yang,
             client,
             sec_config.flush_bgp_as,
-            sec_config.pass_policy_name
+            new_policy
             )
         LOGGER.info('\n%s',
                     tabulate(
