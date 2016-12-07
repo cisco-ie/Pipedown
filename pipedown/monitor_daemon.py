@@ -106,7 +106,7 @@ def link_check(sec_config, client):
     try:
         link = Link(sec_config.destination, sec_config.source, sec_config.protocols)
     except (TypeError, ValueError, AddrFormatError) as err:
-        LOGGER.critical(err)
+        LOGGER.critical('Error with monitor.config: %s', err)
         return False
     try:
         result = health(
