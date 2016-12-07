@@ -170,6 +170,22 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
 
     @patch('monitor_daemon.response.email_alert')
     @patch('monitor_daemon.response.text_alert')
+    def test_alert_response_miss_host(self, mock_text, mock_email):
+        copyfile(
+            os.path.join(self.location, 'Examples/Config/missing_hostname.config'),
+            self.config_path
+        )
+        config = monitor_daemon.MyConfig(self.config_path)
+        sec_config = config.__dict__['BGP']
+        result = monitor_daemon.alert_response(sec_config, 'BGP', 'up')
+        self.assertTrue(result)
+        mock_email.assert_called_with(
+            'pipedown@cisco.com',
+            "'BGP' link is up on '(missing hostname)'"
+        )
+
+    @patch('monitor_daemon.response.email_alert')
+    @patch('monitor_daemon.response.text_alert')
     def test_alert_response_both(self, mock_text, mock_email):
         copyfile(
             os.path.join(self.location, 'Examples/Config/both_alert.config'),
