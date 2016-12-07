@@ -60,6 +60,7 @@ def monitor(section, lock, config, health_dict):
     while True:
         #Checking link to data center.
         try:
+            LOGGER.info('Checking link health of %s', sec_config.source)
             result = link_check(sec_config, client)
             #If there are no problems.
             if result is False:
@@ -102,7 +103,6 @@ def link_check(sec_config, client):
     Return:
         result (bool): False if the health is good, True if there is a problem.
     """
-    LOGGER.info('Checking link health of %s', sec_config.source)
     try:
         link = Link(sec_config.destination, sec_config.source, sec_config.protocols)
     except (TypeError, ValueError, AddrFormatError) as err:
