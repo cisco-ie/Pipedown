@@ -70,7 +70,7 @@ def monitor(section, lock, config, health_dict):
                         LOGGER.warning('Link is back up, adding neighbor...')
                         health_dict['flushed'] = link_response(client, sec_config, False)
                         #We want to alert that the link is back up.
-                        alert_response(config, section, 'up')
+                        alert_response(sec_config, section, 'up')
                         alerted = False
                     else:
                         LOGGER.info('Link is good.')
