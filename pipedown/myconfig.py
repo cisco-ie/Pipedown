@@ -28,7 +28,7 @@ class MyConfig(object):
         section_names = parser.sections()
         if len(section_names) == 0:
             raise ValueError('File contains no section headers.')
-        self.sections = {}
+        sections = {}
         for name in section_names:
             try:
                 temp_sec = Section(name, parser)
@@ -37,8 +37,8 @@ class MyConfig(object):
             #Dashes cause errors down the road.
             if '-' in name:
                 name = name.replace('-', '')
-            self.sections[name] = temp_sec
-        self.__dict__.update(self.sections)
+            sections[name] = temp_sec
+        self.__dict__.update(sections)
 
     def __repr__(self):
         return '{}(sections = {})'.format(
