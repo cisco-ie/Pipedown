@@ -67,25 +67,26 @@ def monitor(section, lock, config, health_dict):
                     health_dict[section] = False
                     if health_dict['flushed'] is True:
                         LOGGER.warning('Link is back up, adding neighbor...')
-                        health_dict['flushed'] = healthy_link(client, sec_config)
+                        health_dict['flushed'] = link_response(client, sec_config, False)
                         #We want to alert that the link is back up.
                         alerted = False
+                        alerted = alert_response(config, section, True)
                     else:
                         LOGGER.info('Link is good.')
             #If there is a problem on the link.
             else:
                 LOGGER.warning('Link %s is down.', section)
-                #If the link is not already flushed.
                 with lock:
                     health_dict[section] = True
+                    #If the link is not already flushed.
                     if health_dict['flushed'] is False:
                         if all(values[1] for values in health_dict.items()
                                if values[0] != 'flushed'):
-                            health_dict['flushed'] = problem_flush(client, sec_config)
+                            health_dict['flushed'] = link_response(client, sec_config, True)
                     else:
                         LOGGER.info('Link already flushed.')
                 if not alerted:
-                    alerted = problem_alert(config, section)
+                    alerted = alert_response(config, section, True)
         except (GRPCError, AbortionError):
             LOGGER.critical(
                 'GRPC error when checking link health, health cannot be determined.'
@@ -120,16 +121,20 @@ def link_check(sec_config, client):
     except (GRPCError, AbortionError):
         raise
 
-def healthy_link(client, sec_config):
-    """Response when the link is healthy.
-    BGP relationship will be returned to it's original policy if it was flushed.
-    No action will be taken if the BGP relationship was never flushed.
+def link_response(client, sec_config, result):
+    """Link response - either a flush or a bring it back up.
+    BGP relationship will be returned to it's original policy if th result is a
+    healthy link.
+    BGP relationship will be flushed if the result is that the link is not healthy.
 
     Args:
+        client (GRPCClient): The gRPC client object.
         sec_config (Section): The Section object for the current config section.
+        result (bool): False is the link is healthy, True if it is unhealthy.
 
     Return:
-        False (bool):Sets Flushed back to False.
+        False (bool):Sets Flushed back to False if policy is changed back to 
+        original policy, sets Flushed to True if the link is flushed.
     """
     try:
         reply = response.model_selection(
@@ -150,13 +155,13 @@ def healthy_link(client, sec_config):
                         tablefmt="rst"
                     )
                    )
-        #Set flushed back to False
-        return False
+        #Set flushed back to False (not flushed) or True (flushed).
+        return bool(result)
     except (GRPCError, AbortionError):
         LOGGER.error('No neighbors updated due to GRPC Merge Error.')
-        return True
+        return not bool(result)
 
-def problem_alert(sec_config, section):
+def alert_response(sec_config, section, result):
     """Alert because there are problems on the link.
 
         Args:
@@ -169,57 +174,24 @@ def problem_alert(sec_config, section):
     """
     alerted = False
     try:
-        response.text_alert(sec_config.text_alert, section)
+        response.text_alert(
+            sec_config.text_alert, section, result, sec_config.hostname
+            )
         #Prevent spamming the alert.
         alerted = True
     except AttributeError:
         #There is no text_alert option
         pass
     try:
-        response.email_alert(sec_config.email_alert, section)
+        response.email_alert(
+            sec_config.email_alert, section, result, sec_config.hostname
+            )
         #Prevent spamming the alert.
         alerted = True
     except AttributeError:
         #There is no email alert option.
         pass
     return alerted
-
-def problem_flush(client, sec_config):
-    """If there are problems on the link flush, alert with text and/or email,
-       or both.
-
-    Args:
-        client (GRPCClient): The gRPC client object.
-        sec_config (Section): The config object for the current config section.
-
-    Return:
-         flushed (bool): Updates monitor's flushed to True if the link
-                        is flushed.
-    """
-    try:
-        #If all the links are down.
-        reply = response.model_selection(
-            sec_config.yang,
-            client,
-            sec_config.flush_bgp_as,
-            sec_config.drop_policy_name
-            )
-        LOGGER.info('\n%s',
-                    tabulate(
-                        reply,
-                        headers=[
-                            "Neighbor",
-                            "Link Type",
-                            "Old Policy",
-                            "New Policy"
-                        ],
-                        tablefmt="rst"
-                    )
-                   )
-        return True
-    except (GRPCError, AbortionError):
-        LOGGER.error('No neighbors updated due to GRPC Merge Error.')
-        return False
 
 def daemon():
     #Spawn process per a section header.
