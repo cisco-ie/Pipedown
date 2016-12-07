@@ -58,7 +58,7 @@ class MyConfigTestCase(unittest.TestCase, object):
                 self.config_path
             )
 
-@patch('monitor_daemon.LOGGER')
+
 class MonitorDaemonTestCase(unittest.TestCase, object):
     @classmethod
     def setUpClass(cls):
@@ -73,16 +73,24 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
             os.path.join(cls.location, 'Examples/Config/monitor_good.config'),
             cls.config_path
         )
-        config = monitor_daemon.MyConfig(cls.config_path)
+        cls.config = monitor_daemon.MyConfig(cls.config_path)
         cls.grpc_client = CiscoGRPCClient('10.1.1.1', 57777, 10, 'test', 'test')
-        cls.sec_config = config.__dict__['BGP']
+        cls.sec_config = cls.config.__dict__['BGP']
 
-    # def test_monitor(self):
-    #     #Things to test:
-    #     # 1. Logger called with gRPC Error
-    #     # 2. 
-    #     pass
+    @patch('monitor_daemon.LOGGER')
+    @patch('monitor_daemon.link_check')
+    def monitor_grpc_error(self, mock_check, mock_logger):
+        import pdb
+        pdb.set_trace()
+        mock_check.side_effect = GRPCError(
+            err="{'cisco-grpc': {'errors':{'error': {'error-message': 'There was an error'}}}}"
+        )
+        lock = False
+        health_dict = {}
+        monitor_daemon.monitor('BGP', lock, self.config, health_dict)
+        self.assertTrue(mock_logger.critical.calledm)
 
+    @patch('monitor_daemon.LOGGER')
     @patch('Response.response.model_selection')
     def test_grpc_merge_errors(self, mock_grpc, mock_logger):
         mock_grpc.side_effect = GRPCError(
@@ -97,7 +105,7 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
         self.assertTrue(mock_logger.error.called)
 
     @patch('monitor_daemon.health')
-    def test_link_check_grpc_errors(self, mock_grpc, mock_logger):
+    def test_link_check_grpc_errors(self, mock_grpc):
         mock_grpc.side_effect = GRPCError(
             err="{'cisco-grpc': {'errors':{'error': {'error-message': 'There was an error'}}}}"
         )
@@ -106,7 +114,7 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
 
     @patch('monitor_daemon.Link')
     @patch('monitor_daemon.health')
-    def test_link_check_link_error(self, mock_link, mock_response, mock_logger):
+    def test_link_check_link_error(self, mock_link, mock_response):
         mock_link.side_effect = TypeError()
         with self.assertRaises(TypeError):
             result = monitor_daemon.link_check(self.sec_config, self.grpc_client)
@@ -115,7 +123,7 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
 
     @patch('monitor_daemon.response.email_alert')
     @patch('monitor_daemon.response.text_alert')
-    def test_alert_response_email(self, mock_text, mock_email, mock_logger):
+    def test_alert_response_email(self, mock_text, mock_email):
         #Check if hostname is missing from the file
         copyfile(
             os.path.join(self.location, 'Examples/Config/email_alert.config'),
@@ -133,7 +141,7 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
 
     @patch('monitor_daemon.response.email_alert')
     @patch('monitor_daemon.response.text_alert')
-    def test_alert_response_text(self, mock_text, mock_email, mock_logger):
+    def test_alert_response_text(self, mock_text, mock_email):
         copyfile(
             os.path.join(self.location, 'Examples/Config/text_alert.config'),
             self.config_path
@@ -150,7 +158,7 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
 
     @patch('monitor_daemon.response.email_alert')
     @patch('monitor_daemon.response.text_alert')
-    def test_alert_response_both(self, mock_text, mock_email, mock_logger):
+    def test_alert_response_both(self, mock_text, mock_email):
         copyfile(
             os.path.join(self.location, 'Examples/Config/both_alert.config'),
             self.config_path
