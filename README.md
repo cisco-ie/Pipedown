@@ -81,19 +81,22 @@ Step 6: Create a monitor.config file in the router-connectedness directory and f
 
 ```
 [Name-for-connection]
-destination : ip_address          # IP address of where iPerf is running in the data center
-source : ip_address               # IP address of your souce link
-protocol : protocol               # Protocol you want to monitor [isis, BGP]
-bw_thres : bandwidth              # Integer value of Bandwidth in KB that you determine is the minmum value for the link
-jitter_thres : jitter_threshold   # Integer value of Jitter Threshold
-pkt_loss : packet loss            # Integer value of number of packets allowed to lose
-interval : interval               # Integer value in seconds of how often you want the test to run
-grpc_server : ip_address          # IP address of the router you are monitoring (Can be local loopback 127.0.0.1)
-grpc_port : port                  # gRPC port number
-grpc_user : username              # Username for AAA authentication
-grpc_pass : password              # Password for AAA authentication
-flush_as : flush_as               # The AS number of the neighbor group for the internet
+destination : ip_address           # IP address of where iPerf is running in the data center
+source : ip_address                # IP address of your souce link
+protocols : protocol               # Protocol you want to monitor [isis, BGP]
+bw_thres : bandwidth               # Integer value of Bandwidth in KB that you determine is the minmum value for the link
+jitter_thres : jitter_threshold    # Integer value of Jitter Threshold
+pkt_loss : packet loss             # Integer value of number of packets allowed to lose
+interval : interval                # Integer value in seconds of how often you want the test to run
+grpc_server : ip_address           # IP address of the router you are monitoring (Can be local loopback 127.0.0.1)
+grpc_port : port                   # gRPC port number
+grpc_user : username               # Username for AAA authentication
+grpc_pass : password               # Password for AAA authentication
+flush_bgp_as : flush_bgp_as        # The AS number of the neighbor group for the internet
 drop_policy_name: drop_policy_name # The policy name that you want when the flush is activated.
+pass_policy_name: pass_policy_name # The polocy name that you want to pass packets.
+text_alert : phone_number          # Phone number to text with text alerting. Turns alerting on.
+hostname: hostname                     # Hostname for clarifying alert messages.
 ```
 Example:
 ```
@@ -111,6 +114,8 @@ grpc_user : vagrant
 grpc_pass : vagrant
 flush_as : 65000
 drop_policy_name: drop
+text_alert : +14087784819
+hostname: rtr1
 ```
 
 Step 7: Turn on iPerf on destination box.
