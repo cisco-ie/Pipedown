@@ -57,11 +57,11 @@ def monitor(section, lock, config, health_dict):
     alerted = False
     #Set up a gRPC client.
     client = CiscoGRPCClient(
-        sec_config.grpc_server,
-        int(sec_config.grpc_port),
+        config.grpc_server,
+        int(config.grpc_port),
         10,
-        sec_config.grpc_user,
-        sec_config.grpc_pass
+        config.grpc_user,
+        config.grpc_pass
         )
     while True:
         #Checking link to data center.
