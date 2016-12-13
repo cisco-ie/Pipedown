@@ -31,13 +31,21 @@ class MyConfig(object):
         sections = {}
         for name in section_names:
             try:
-                temp_sec = Section(name, parser)
+                #This is not ideal since grpc_* is hardcoded in. If we expand
+                #to different transports this section will need to be general.
+                if name == 'TRANSPORT':
+                    self.grpc_server = parser.get(name, 'grpc_server')
+                    self.grpc_port = parser.get(name, 'grpc_port')
+                    self.grpc_user = parser.get(name, 'grpc_user')
+                    self.grpc_pass = parser.get(name, 'grpc_pass')
+                else:
+                    temp_sec = Section(name, parser)
+                    #Dashes cause errors down the road.
+                    if '-' in name:
+                        name = name.replace('-', '')
+                    sections[name] = temp_sec
             except KeyError:
                 raise
-            #Dashes cause errors down the road.
-            if '-' in name:
-                name = name.replace('-', '')
-            sections[name] = temp_sec
         self.__dict__.update(sections)
 
     def __repr__(self):
@@ -60,7 +68,7 @@ class Section(object):
     def __init__(self, section, parser):
         self.__dict__.update(parser.items(section))
         try:
-            self.__int__('interval',
+            self.multi_int('interval',
                          'jitter_thres',
                          'pkt_loss',
                          'bw_thres',
@@ -74,7 +82,7 @@ class Section(object):
             #This is NOT an optional parameter.
             raise
 
-    def __int__(self, *args):
+    def multi_int(self, *args):
         """Convert multiple values to int."""
         for arg in args:
             self.__dict__[arg] = int(self.__dict__[arg])
