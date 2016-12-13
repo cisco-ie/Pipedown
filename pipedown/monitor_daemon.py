@@ -29,13 +29,13 @@ import log
 from myconfig import MyConfig
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
 from Monitor.link import Link
-from Monitor.health import health
+from Monitor.health import health check_rib
 from Response import response
 from Tools.exceptions import GRPCError
 
 LOGGER = log.log()
 
-def monitor(section, lock, config, health_dict):
+def monitor(section, config, health_dict, client, result):
     """TODO: Add docstring here.
         Args:
             section (str): Section name.
@@ -44,17 +44,7 @@ def monitor(section, lock, config, health_dict):
             config (MyConfig): The config object for the current config section.
             health_dict (multiprocessing.Manager): Multi-threaded dictionary.
     """
-    #Silence keyboard interrupt signal. TODO: Do I need this?
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-    #Access the section in config.
     sec_config = config.__dict__[section]
-    #Will call alert if there is an alert.
-    if hasattr(sec_config, 'text_alert') or hasattr(sec_config, 'email_alert'):
-        alert = True
-    else:
-        alert = False
-    #Marks that an alert has not been sent (prevents spam).
-    alerted = False
     #Set up a gRPC client.
     client = CiscoGRPCClient(
         sec_config.grpc_server,
@@ -63,42 +53,74 @@ def monitor(section, lock, config, health_dict):
         sec_config.grpc_user,
         sec_config.grpc_pass
         )
-    while True:
-        #Checking link to data center.
-        try:
-            LOGGER.info('Checking link health of %s', sec_config.source)
-            result = link_check(sec_config, client)
-            #If there are no problems.
-            if result is False:
-                with lock:
-                    health_dict[section] = False
-                    if health_dict['flushed'] is True:
-                        LOGGER.warning('Link is back up, adding neighbor...')
-                        health_dict['flushed'] = link_response(client, sec_config, False)
-                        #We want to alert that the link is back up.
-                        if alert:
-                            alert_response(sec_config, section, 'up')
-                            alerted = False
-                    else:
-                        LOGGER.info('Link is good.')
-            #If there is a problem on the link.
+        #Will call alert if there is an alert.
+    if hasattr(sec_config, 'text_alert') or hasattr(sec_config, 'email_alert'):
+        alert = True
+    else:
+        alert = False
+    #Marks that an alert has not been sent (prevents spam).
+    alerted = False
+    try:
+        #If there are no problems.
+        if result is False:
+            health_dict[section] = False
+            if health_dict['flushed'] is True:
+                LOGGER.warning('Link is back up, adding neighbor...')
+                health_dict['flushed'] = link_response(client, sec_config, False)
+                #We want to alert that the link is back up.
+                if alert:
+                    alert_response(sec_config, section, 'up')
+                    alerted = False
             else:
-                LOGGER.warning('Link %s is down.', section)
-                with lock:
-                    health_dict[section] = True
-                    #If the link is not already flushed.
-                    if health_dict['flushed'] is False:
-                        if all(values[1] for values in health_dict.items()
-                               if values[0] != 'flushed'):
-                            health_dict['flushed'] = link_response(client, sec_config, True)
-                    else:
-                        LOGGER.info('Link already flushed.')
-                if alert and not alerted:
-                    alerted = alert_response(sec_config, section, 'down')
-        except (GRPCError, AbortionError):
-            LOGGER.critical(
-                'GRPC error when checking link health, health cannot be determined.'
-            )
+                LOGGER.info('Link is good.')
+        #If there is a problem on the link.
+        else:
+            LOGGER.warning('Link %s is down.', section)
+            health_dict[section] = True
+            #If the link is not already flushed.
+            if health_dict['flushed'] is False:
+                if all(values[1] for values in health_dict.items()
+                       if values[0] != 'flushed'):
+                    health_dict['flushed'] = link_response(client, sec_config, True)
+            else:
+                LOGGER.info('Link already flushed.')
+        if alert and not alerted:
+            alerted = alert_response(sec_config, section, 'down')
+    except (GRPCError, AbortionError):
+        LOGGER.critical(
+            'GRPC error when checking link health, health cannot be determined.'
+        )
+
+
+def health_check(section, config):
+    """Checks the health of the link.
+
+    Args:
+        sec_config (Section): The section object for the current config section.
+        client (GRPCClient): The gRPC client object.
+
+    Return:
+        result (bool): False if the health is good, True if there is a problem.
+    """
+    sec_config = config.__dict__[section]
+    #Set up a gRPC client.
+    client = CiscoGRPCClient(
+        sec_config.grpc_server,
+        int(sec_config.grpc_port),
+        10,
+        sec_config.grpc_user,
+        sec_config.grpc_pass
+        )
+    try:
+        link = Link(sec_config.destination, sec_config.source, sec_config.protocols)
+    except (TypeError, ValueError, AddrFormatError) as err:
+        LOGGER.critical('Error with monitor.config: %s', err)
+        return False
+    try:
+        result = check_rib(link, client)
+        return result
+    except (GRPCError, AbortionError):
+        raise
 
 def link_check(sec_config, client):
     """Checks the health of the link.
@@ -116,9 +138,8 @@ def link_check(sec_config, client):
         LOGGER.critical('Error with monitor.config: %s', err)
         return False
     try:
-        result = health(
+        result = run_iperf(
             link,
-            client,
             sec_config.bw_thres,
             sec_config.jitter_thres,
             sec_config.pkt_loss,
@@ -140,7 +161,7 @@ def link_response(client, sec_config, result):
         result (bool): False is the link is healthy, True if it is unhealthy.
 
     Return:
-        False (bool):Sets Flushed back to False if policy is changed back to 
+        False (bool):Sets Flushed back to False if policy is changed back to
         original policy, sets Flushed to True if the link is flushed.
     """
     try:
@@ -212,41 +233,31 @@ def alert_response(sec_config, section, status):
         pass
     return alerted
 
-def daemon():
-    #Spawn process per a section header.
+def handler():
     location = os.path.dirname(os.path.realpath(__file__))
     try:
         config = MyConfig(os.path.join(location, 'monitor.config'))
     except (ValueError, KeyError) as msg:
         LOGGER.critical(msg)
         sys.exit(1)
-    manager = multiprocessing.Manager()
-    health_dict = manager.dict()
-    #Can I move this into the below loop? <------------------------###
-    for section in config.__dict__.keys():
-        health_dict[section] = False
+    health_dict = {}
     health_dict['flushed'] = False
-    jobs = []
-    #Create lock object to ensure gRPC is only used once
-    lock = multiprocessing.Lock()
-    for section in config.__dict__.keys():
-        d = multiprocessing.Process(name=section, target=monitor, args=(
-            section,
-            lock,
-            config,
-            health_dict
-            )
-        )
-        jobs.append(d)
-        d.start()
-    try:
-        for job in jobs:
-            job.join()
-    except KeyboardInterrupt:
-        print('Keyboard interrupt received.')
-        for job in jobs:
-            job.terminate()
-            job.join()
+    health = {}
+    while true:
+        for section in config.__dict__.keys():
+            health_dict[section] = False
+            #Silence keyboard interrupt signal. TODO: Do I need this?
+            signal.signal(signal.SIGINT, signal.SIG_IGN)
+                #Checking link to data center.
+            LOGGER.info('Checking link health of %s', sec_config.source)
+            health[section] = health_check(sec_config, client)
+        for section in config.__dict__.keys():
+            if all(values[1] for values in health.items()):
+                result = link_check(sec_config, client)
+            else:
+                result = True
+            monitor(section, config, health_dict, result)
+
 
 if __name__ == '__main__':
-    daemon()
+    handler()

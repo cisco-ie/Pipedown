@@ -142,7 +142,7 @@ def ping_test(link, timeout=10):
     else:
         return True
 
-def health(link, grpc_client, bw_thres=400, jitter_thres=10, pkt_loss=2,
+def health(link, bw_thres=400, jitter_thres=10, pkt_loss=2,
            interval=5):
     """Returns False if error on link, True if no errors.
      Runs both check_rib and run_iperf.
