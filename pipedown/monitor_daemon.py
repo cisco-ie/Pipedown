@@ -224,7 +224,8 @@ def daemon():
     health_dict = manager.dict()
     #Can I move this into the below loop? <------------------------###
     for section in config.__dict__.keys():
-        health_dict[section] = False
+        if 'grpc' not in section:
+            health_dict[section] = False
     health_dict['flushed'] = False
     jobs = []
     #Create lock object to ensure gRPC is only used once
