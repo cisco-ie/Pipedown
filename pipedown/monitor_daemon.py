@@ -231,15 +231,16 @@ def daemon():
     #Create lock object to ensure gRPC is only used once
     lock = multiprocessing.Lock()
     for section in config.__dict__.keys():
-        d = multiprocessing.Process(name=section, target=monitor, args=(
-            section,
-            lock,
-            config,
-            health_dict
+        if 'grpc' not in section:
+            d = multiprocessing.Process(name=section, target=monitor, args=(
+                section,
+                lock,
+                config,
+                health_dict
+                )
             )
-        )
-        jobs.append(d)
-        d.start()
+            jobs.append(d)
+            d.start()
     try:
         for job in jobs:
             job.join()
