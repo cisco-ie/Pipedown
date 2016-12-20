@@ -174,7 +174,7 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
                     (
                         neighbor['neighbor-address'],
                         ipv['afi-safi-name'],
-                        curr_policy,
+                        str(curr_policy[0]),
                         new_policy_name
                         )
                     )
