@@ -69,26 +69,23 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
     Returns:
         str: Updated neighbors' IPs and the policy that changed.
     """
+    #Brackets closures left on one line for consistency in unit tests that
+    #use json.loads (which places no space between closing brackets).
     bgp_config_template = '''
     {"Cisco-IOS-XR-ipv4-bgp-cfg:bgp":
       {"instance":
-        [
-          {"instance-name":
-            "default",
-            "instance-as":
-              [
-                "four-byte-as":
-                  [
-                    {"default-vrf":
+        [{"instance-name":
+            "default","instance-as":
+              [{"four-byte-as":
+                  [{"default-vrf":
                       {"bgp-entity":
                         {"neighbors":
                           {"neighbor":
-                            [
-                              {"neighbor-afs":
-                                {"neighbor-af": []},
-                                "remote-as": {}
-    }]}}}}]}]}]}}
+                            [{"neighbor-afs":
+                                {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}
     '''
+    #Get rid of newlines and spaces. Mostly for cosmetics.
+    bgp_config_template = ' '.join(bgp_config_template.split())
     # Get the BGP config.
     try:
         bgp_config = get_bgp_config(grpc_client, bgp_config_template)
@@ -120,7 +117,7 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
                     (
                         neighbor['neighbor-address'],
                         ipv['af-name'],
-                        str(curr_policy[0]),
+                        curr_policy,
                         new_policy_name
                         )
                     )
