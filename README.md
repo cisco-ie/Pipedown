@@ -3,7 +3,6 @@
 
 ##### Pipedown 1.5.1
 
-
 ##### Released November 3, 2016
 
 ##### Author: Lisa Roach, Karthik Kumaravel, Quan Le
