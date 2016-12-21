@@ -29,6 +29,33 @@ from Tools.exceptions import GRPCError
 
 LOGGER = logging.getLogger()
 
+def nested_lookup(col, key, *keys):
+    """Search dictionaries nested in dictionaries nested in lists, etc, for key.
+
+    Args:
+        col (dict or list): The collection to be searched through.
+        key (str): The key to locate in the collection.
+        keys (iterable): The keys to iterate through before finding key.
+
+    Returns:
+        str or dict or list: Returns the value of the key.
+
+    """
+    if keys:
+        if isinstance(col, dict):
+            return nested_lookup(col.get(key, {}), *keys)
+        elif isinstance(col, list):
+            if len(col) > 1:
+                return nested_lookup(col[col.index(key)+1], *keys)
+            else:
+                return nested_lookup(col[0].get(key, {}), *keys)
+    if isinstance(col, dict):
+        return col.get(key)
+    elif isinstance(col, list):
+        if isinstance(col[0], dict):
+            return col[0].get(key)
+        else:
+            return col[0]
 
 def cisco_update(grpc_client, neighbor_as, new_policy_name):
     """Initiate the GRPC client to perform the neighbor removal and commits,
@@ -42,7 +69,23 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
     Returns:
         str: Updated neighbors' IPs and the policy that changed.
     """
-    bgp_config_template = '{"Cisco-IOS-XR-ipv4-bgp-cfg:bgp": {"instance": [{"instance-name": "default","instance-as": [{"four-byte-as": [{"default-vrf": {"bgp-entity": {"neighbors": {"neighbor": [{"neighbor-afs": {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}'
+    #Brackets closures left on one line for consistency in unit tests that
+    #use json.loads (which places no space between closing brackets).
+    bgp_config_template = '''
+    {"Cisco-IOS-XR-ipv4-bgp-cfg:bgp":
+      {"instance":
+        [{"instance-name":
+            "default","instance-as":
+              [{"four-byte-as":
+                  [{"default-vrf":
+                      {"bgp-entity":
+                        {"neighbors":
+                          {"neighbor":
+                            [{"neighbor-afs":
+                                {"neighbor-af": []},"remote-as": {}}]}}}}]}]}]}}
+    '''
+    #Get rid of newlines and spaces. Mostly for cosmetics.
+    bgp_config_template = ' '.join(bgp_config_template.split())
     # Get the BGP config.
     try:
         bgp_config = get_bgp_config(grpc_client, bgp_config_template)
@@ -50,16 +93,22 @@ def cisco_update(grpc_client, neighbor_as, new_policy_name):
         raise
     # Drill down to the neighbors to be flushed or added.
     bgp_config = json.loads(bgp_config)
-    neighbors = bgp_config['Cisco-IOS-XR-ipv4-bgp-cfg:bgp']['instance'][0]
-    neighbors = neighbors['instance-as'][0]['four-byte-as'][0]['default-vrf']
-    neighbors = neighbors['bgp-entity']['neighbors']['neighbor']
-
+    neighbors = nested_lookup(bgp_config,
+                              *['Cisco-IOS-XR-ipv4-bgp-cfg:bgp',
+                                'instance',
+                                'instance-as',
+                                'four-byte-as',
+                                'default-vrf',
+                                'bgp-entity',
+                                'neighbors',
+                                'neighbor'
+                               ]
+                             )
     updated_neighbors = []
     for neighbor in neighbors:
         as_val = neighbor['remote-as']['as-yy']
         if as_val in neighbor_as:
-            neighbor_af = neighbor['neighbor-afs']['neighbor-af']
-            for ipv in neighbor_af:
+            for ipv in neighbor['neighbor-afs']['neighbor-af']:
                 # Change the policy to drop or pass.
                 curr_policy = ipv['route-policy-out']
                 ipv['route-policy-out'] = new_policy_name
@@ -98,22 +147,31 @@ def open_config_update(grpc_client, neighbor_as, new_policy_name):
         raise
     # Drill down to the neighbors to be flushed.
     bgp_config = json.loads(bgp_config, object_pairs_hook=OrderedDict)
+    neighbors = nested_lookup(bgp_config,
+                              *['openconfig-bgp:bgp',
+                                'neighbors',
+                                'neighbor'
+                               ]
+                             )
     updated_neighbors = []
-    neighbors = bgp_config['openconfig-bgp:bgp']['neighbors']['neighbor']
     for neighbor in neighbors:
         as_val = neighbor['config']['peer-as']
         if as_val in neighbor_as:
             # Change the policy to drop.
-            ipvs = neighbor['afi-safis']['afi-safi']
-            for ipv in ipvs:
-                curr_policy = ipv['apply-policy']['config']['export-policy'][0]
+            for ipv in neighbor['afi-safis']['afi-safi']:
+                curr_policy = nested_lookup(ipv,
+                                            *['apply-policy',
+                                              'config',
+                                              'export-policy'
+                                             ]
+                                           )
                 ipv['apply-policy']['config']['export-policy'] = [new_policy_name]
                 # Add the removed neighbors to list.
                 updated_neighbors.append(
                     (
                         neighbor['neighbor-address'],
                         ipv['afi-safi-name'],
-                        curr_policy,
+                        str(curr_policy[0]),
                         new_policy_name
                         )
                     )

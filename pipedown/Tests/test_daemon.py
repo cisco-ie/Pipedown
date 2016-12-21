@@ -133,10 +133,10 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
             self.assertFalse(result)
             mock_response.assert_not_called()
 
+
     @patch('monitor_daemon.response.email_alert')
     @patch('monitor_daemon.response.text_alert')
     def test_alert_response_email(self, mock_text, mock_email):
-        #Check if hostname is missing from the file
         copyfile(
             os.path.join(self.location, 'Examples/Config/email_alert.config'),
             self.config_path
@@ -168,9 +168,10 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
             "'BGP' link is up on 'rtr1'"
         )
 
+    @patch('monitor_daemon.LOGGER')
     @patch('monitor_daemon.response.email_alert')
     @patch('monitor_daemon.response.text_alert')
-    def test_alert_response_miss_host(self, mock_text, mock_email):
+    def test_alert_response_miss_host(self, mock_text, mock_email, mock_logger):
         copyfile(
             os.path.join(self.location, 'Examples/Config/missing_hostname.config'),
             self.config_path

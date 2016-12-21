@@ -42,10 +42,7 @@ class ResponseTestCase(unittest.TestCase, object):
             (u'11.1.1.20', u'ipv6-unicast', u'pass', 'drop')
         ]
         self.assertEqual(updated_neigh, correct_neigh)
-        get_mock.assert_called_with(
-            self.grpc_client,
-            self.cisco_template
-            )
+        get_mock.assert_called_with(self.grpc_client, self.cisco_template)
         cisco_new = read_file('Examples/BGP/cisco-new.txt')
         apply_mock.assert_called_with(self.grpc_client, json.loads(cisco_new))
 

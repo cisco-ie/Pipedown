@@ -93,7 +93,25 @@ def check_rib(link, grpc_client):
         bool: False if no errors, True if errors in RIB.
 
     """
-    path = '{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib": {{"vrfs": {{"vrf": [{{"afs": {{"af": [{{"safs": {{"saf": [{{"ip-rib-route-table-names": {{"ip-rib-route-table-name": [{{"routes": {{"route": {{"address": "{link}"}}}}}}]}}}}]}}}}]}}}}]}}}}}}'
+    path = '''{{"Cisco-IOS-XR-ip-rib-ipv{v}-oper:{ipv6}rib":
+                {{"vrfs":
+                  {{"vrf":
+                      [
+                        {{"afs":
+                          {{"af":
+                            [
+                              {{"safs":
+                                {{"saf":
+                                  [
+                                    {{"ip-rib-route-table-names":
+                                      {{"ip-rib-route-table-name":
+                                        [
+                                          {{"routes":
+                                            {{"route":
+                                              {{"address":
+                                                "{link}"
+                }}}}}}]}}}}]}}}}]}}}}]}}}}}}
+            '''
     ipv6 = ''
     if link.version == 6:
         ipv6 = 'ipv6-'

@@ -11,7 +11,7 @@ with open(os.path.join(here, 'requirements.txt'), encoding='utf-8') as fp:
 
 setup(
     name='Pipedown',
-    version='1.5.0',
+    version='1.5.1',
     author='Lisa Roach, Karthik Kumaravel',
     author_email='lisroach@cisco.com, kkumara3@cisco.com',
     url='https://github.com/cisco-ie/Pipedown',
