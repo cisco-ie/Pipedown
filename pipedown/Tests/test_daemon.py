@@ -80,8 +80,6 @@ class MonitorDaemonTestCase(unittest.TestCase, object):
     @patch('monitor_daemon.LOGGER')
     @patch('monitor_daemon.link_check')
     def monitor_grpc_error(self, mock_check, mock_logger):
-        import pdb
-        pdb.set_trace()
         mock_check.side_effect = GRPCError(
             err="{'cisco-grpc': {'errors':{'error': {'error-message': 'There was an error'}}}}"
         )

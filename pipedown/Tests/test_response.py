@@ -1,7 +1,7 @@
 import unittest
 import os
 import json
-from mock import patch
+from mock import patch, PropertyMock
 
 from Response import response
 from Tools.grpc_cisco_python.client.cisco_grpc_client import CiscoGRPCClient
@@ -115,19 +115,16 @@ class ResponseTestCase(unittest.TestCase, object):
     @patch('Tools.grpc_cisco_python.client.cisco_grpc_client.CiscoGRPCClient.mergeconfig')
     @patch('Response.response.LOGGER')
     def test_apply_policy(self, mock_logger, mock_merge):
-        class A():
-            def __init__(self, err, other):
-                self.errors = err
-                self.other = other
-
-        mock_merge.return_value = A('', 'No error here!')
+        type(mock_merge.return_value).errors = PropertyMock(return_value='')
+        type(mock_merge.return_value).other = PropertyMock(return_value='No error here!')
         response.apply_policy(self.grpc_client, self.cisco_config)
         self.assertTrue(mock_logger.info.called)
         mock_merge.assert_called_with(json.dumps(self.cisco_config))
 
         with self.assertRaises(GRPCError):
             err = read_file('Examples/Errors/grpc-tag.txt')
-            mock_merge.return_value = A(err, '')
+            type(mock_merge.return_value).errors = PropertyMock(return_value=err)
+            type(mock_merge.return_value).other = PropertyMock(return_value='')
             response.apply_policy(self.grpc_client, self.cisco_config)
             self.assertTrue(mock_logger.error.called)
 
