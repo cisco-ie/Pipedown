@@ -67,7 +67,7 @@ After completing the initial ```vagrant up```, the container is already running 
 
 ```ssh -p 58822 ubuntu@localhost```
 
-Here you will see the repository with a proper config. To run the application a simple.
+Here you will see the repository with a proper config. To run the application, navigate to `Pipedown/pipedown/`.
 
 ``` python monitor_daemon.py ```
 
