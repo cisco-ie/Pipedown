@@ -60,9 +60,7 @@ Ensure these things are configured on the router (You can use cli):
 
 - Turn on gRPC. Example:
 ```
-!! 
-
-XR
+!! IOS XR
 !
 grpc
 !
