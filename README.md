@@ -10,13 +10,13 @@
 
 ## Description
 
-The end goal of the Pipedown is to monitor a CDN router and ensures that it has a stable link to the data center, and if it does not, take it offline by removing its link to the internet.
+The end goal of the Pipedown is to monitor a CDN router and ensure that it has a stable link to the data center, and if it does not, take it offline by removing its link to the internet.
 
-The application solves the end goal by checking a link that connects back to the data center and ensure that it is healthy. The link is determined to be healthy using [iPerf](https://iperf.fr/) based on parameters such as jitter, bandwidth, packet loss, and dropped packets. If the link is determined to be unhealthy, then the link connecting to the internet would be flushed using [gRPC](http://www.grpc.io/) based on a user defined AS and policy.
+The application solves the end goal by checking a link that connects back to the data center and ensuring that it is healthy. The link is determined to be healthy using [iPerf](https://iperf.fr/) based on parameters such as jitter, bandwidth, packet loss, and dropped packets. If the link is determined to be unhealthy, then the link connecting to the internet would be flushed using [gRPC](http://www.grpc.io/) based on a user defined AS and policy.
 
 #### Prerequisites:
 
-Cisco IOS-XR box running version 6.1.2.12i and above.
+Cisco IOS-XR box running version 6.1.2 and above.
 
 Pipedown is meant to be run in a Linux container on the IOS-XR. It has been tested on an Ubuntu 14.04 container running Python 2.7. If you run Pipedown in a different scenario we welcome any feedback you have.
 
@@ -24,13 +24,15 @@ Pipedown attempts to be compatible with Python 3 wherever possible, but since gR
 
 #### Current Limitations:
 
-Currently for monitoring multiple links, each link needs to have its own source ip address.
+- For monitoring multiple links, each link needs to have its own source ip address.
+- The link to the internet must be a BGP connection, the monitored link can be either BGP/IS-IS
 
 ### Vagrant
 
-For an easy Pipedown-in-a-box demonstration, please refer to the [vagrant](https://github.com/cisco-ie/Pipedown/tree/master/vagrant) directory. Here you will be able to download a fully functional vagrant environment that has Pipedown up and running already. This demonstration uses concepts that can be better understood by consulting the IOS XR tutorials: https://xrdocs.github.io/application-hosting/tutorials/.
+For an easy Pipedown-in-a-box demonstration, please refer to the [vagrant directory](https://github.com/cisco-ie/Pipedown/tree/master/vagrant). Here you will be able to download a fully functional vagrant environment that has Pipedown up and running already. This demonstration uses concepts that can be better understood by consulting the IOS-XR tutorials: https://xrdocs.github.io/application-hosting/tutorials/.
 
 ## Usage
+The following steps are to be done in a IOS-XR container. If you need help getting started with containers and IOS-XR: [App-hosting](https://xrdocs.github.io/application-hosting/tutorials/2016-06-16-xr-toolbox-part-4-bring-your-own-container-lxc-app/)
 
 Step 1: Clone this repo and cd into Pipedown
 
@@ -48,8 +50,100 @@ Step 3: Install gRPC. (If you chose to install outside of a virtualenv, you may 
 
 `pip install grpcio`
 
-Step 4 (optional): Install iPerf on both routers. This is only required if you plan to use iPerf as for your
-connectivity test. By default, iPerf is in use, so it is recommended that it be installed.
+Step 4: Run the `setup.py` script.
+
+`python setup.py install`
+
+Step 5: Configuring the router (Not done in the container).
+
+Ensure these things are configured on the router (You can use cli):
+
+- Turn on gRPC. Example:
+```
+!! 
+
+XR
+!
+grpc
+!
+end
+```
+
+- Route-policy that will drop everything, (how the app flushes the internet connection). Example: 
+
+```
+!! IOS XR
+!
+route-policy drop
+  drop
+end-policy
+!
+end
+```
+Step 6: Create a monitor.config file in the router-connectedness directory and fill in the values in the key:value pair.
+
+```
+# [TRANSPORT]
+# In this section you must include all of your transport object needs.
+# Currently, grpc is the only supported transport, so the following options
+# are required options:
+# grpc_server : ip_address # IP address of the router you are monitoring (Can be local loopback 127.0.0.1)
+# grpc_port : port # gRPC port number
+# grpc_user : username # Username for AAA authentication
+# grpc_pass : password # Password for AAA authentication
+
+# [Name-for-connection]
+##### REQUIRED OPTIONS ######
+# destination : ip_address # IP address of where iPerf is running in the data center
+# source : ip_address # IP address of your source link
+# protocols : protocol # Protocols you want to monitor [IS-IS, BGP]
+
+##### iPERF OPTIONS #####
+# bw_thres : bandwidth # Integer value of Bandwidth in KB that you determine is the minimum value for the link
+# jitter_thres : jitter_threshold # Integer value of Jitter Threshold
+# pkt_loss : packet loss # Integer value of number of packets allowed to lose
+# interval : interval # Integer value in seconds of how often you want the test to run
+
+
+##### FLUSH OPTIONS #####
+# flush_bgp_as : flush_as # The AS number of the neighbor group for the internet. Indicates you want the link flushed.
+# yang: yang model type # The type of yang to use. Options are cisco and openconfig.
+# drop_policy_name: drop_policy_name # The policy name that you want when the flush is activated.
+# pass_policy_name: pass_policy_name # The policy name that is originally allowing traffic to pass to the internet.
+
+##### ALERT OPTIONS #####
+# hostname: The hostname of your router. Used to clarify messages.
+# text_alert: phone_number # The phone number to text. Indicates texting is desired.
+# email_alert: email_address # Email address to be emailed. Indicates emails are desired. Can be multiple values.
+```
+Example:
+```
+[TRANSPORT]
+grpc_server : 127.0.0.1
+grpc_port : 57777
+grpc_user : vagrant
+grpc_pass : vagrant
+
+[DEFAULT]
+hostname: rtr1
+text_alert : +14087784819
+# email_alert:  pipedown@cisco.com
+yang: openconfig
+flush_bgp_as : 65000
+drop_policy_name : drop
+pass_policy_name : pass
+
+[IS-IS]
+destination : 5.5.5.5
+source : 10.1.1.1
+protocols : isis
+bw_thres : 200
+jitter_thres : 20
+pkt_loss : 3
+interval : 2
+```
+
+Step 7: Install iPerf on both the container and the end host you are monitoring against. The end host can be either a router or a server.
 
 On a linux container, install iPerf how you normally would for your OS. Example:
 
@@ -61,74 +155,12 @@ On a native IOS-XR box, use yum:
 
 iPerf will need to be turned on on the data center router whom you are testing connectivity to.
 
-To turn on iPerf on your data center router, use this command:
+To turn on iPerf on your data center router that you are testing the connection to, use this command:
 
 `iperf -s -B <port address to bind to> -u`
 
 
-Step 4: Run the `setup.py` script.
-
-`python setup.py install`
-
-Step 5: Configuring the router.
-
-Ensure these things are configured on the router:
-
-- Turn on gRPC.
-- Route-policy that will drop everything, (how the app flushes the internet connection).
-
-Step 6: Create a monitor.config file in the router-connectedness directory and fill in the values in the key:value pair.
-
-```
-[Name-for-connection]
-destination : ip_address           # IP address of where iPerf is running in the data center
-source : ip_address                # IP address of your souce link
-protocols : protocol               # Protocol you want to monitor [isis, BGP]
-bw_thres : bandwidth               # Integer value of Bandwidth in KB that you determine is the minmum value for the link
-jitter_thres : jitter_threshold    # Integer value of Jitter Threshold
-pkt_loss : packet loss             # Integer value of number of packets allowed to lose
-interval : interval                # Integer value in seconds of how often you want the test to run
-grpc_server : ip_address           # IP address of the router you are monitoring (Can be local loopback 127.0.0.1)
-grpc_port : port                   # gRPC port number
-grpc_user : username               # Username for AAA authentication
-grpc_pass : password               # Password for AAA authentication
-flush_bgp_as : flush_bgp_as        # The AS number of the neighbor group for the internet
-drop_policy_name: drop_policy_name # The policy name that you want when the flush is activated.
-pass_policy_name: pass_policy_name # The polocy name that you want to pass packets.
-text_alert : phone_number          # Phone number to text with text alerting. Turns alerting on.
-hostname: hostname                     # Hostname for clarifying alert messages.
-```
-Example:
-```
-[IS-IS]
-destination : 5.5.5.5
-source : 10.1.1.1
-protocol : isis
-bw_thres : 200
-jitter_thres : 20
-pkt_loss : 3
-interval : 10
-grpc_server : 127.0.0.1
-grpc_port : 57777
-grpc_user : vagrant
-grpc_pass : vagrant
-flush_as : 65000
-drop_policy_name: drop
-text_alert : +14087784819
-hostname: rtr1
-```
-
-Step 7: Turn on iPerf on destination box.
-
-The iPerf server must be running on another router or server (the router to whom you are trying to connect your link) in order to test iPerf.
-
-Use following command to launch iPerf:
-
-```iperf -s -B ip_address -u```
-
-*Replace ip_address with the destination ip address.
-
-Step 8: Run deamon.
+Step 8: In the container run the deamon.
 
 Run the monitor daemon. It uses multithreading so a instance will spawn for every link you want to monitor. You can check the log to ensure it is working.
 
@@ -154,7 +186,12 @@ Do this at the ~/Pipedown/pipedown directory:
 
 The iPerf server must be running on another router (the router to whom you are trying to connect your link) in order to test iPerf.
 
-Use following command to launch iPerf:
+Use the following command to launch iPerf:
 
 
 ```iperf -s -B 10.1.1.2 -u```
+
+## License
+>You can check out the full license [here](https://github.com/cisco-ie/Pipedown/blob/master/LICENSE)
+
+This project is licensed under the terms of the **APACHE-2.0** license.
