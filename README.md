@@ -5,12 +5,12 @@
 
 ##### Released November 3, 2016
 
-##### Author: Lisa Roach, Karthik Kumaravel, Quan Le
+##### Author: Lisa Roach, Karthik Kumaravel, Quan Le, Bruce McDougall
 ##### Contact: Please use the Issues page to ask questions or open bugs and feature requests.
 
 ## Description
 
-The end goal of the Pipedown is to monitor a CDN router and ensure that it has a stable link to the data center, and if it does not, take it offline by removing its link to the internet.
+Pipedown is designed to be a modular, configurable, and extensible application (think of a python-based version of Cisco Embedded Event Manager, or Junos SLAX scripts), for doing any number of automated network tasks – monitoring, diagnostics, packet generation, event notification, problem remediation, etc.  In its initial release Pipedown can run in IOS-XR’s linux shell, or an operator installed LXC on an IOS-XR router.  Because Pipedown is written in python, its use cases are not constrained by IOS-XR’s (or any other vendor’s) internal tooling and configuration syntax; ie, Pipedown can incorporate existing linux or python tools (iPerf, Scapy, etc.), or the user may write their own.  This first release of Pipedown includes a CDN monitoring application, whose end goal is to monitor a CDN router’s connectivity and ensure it has a stable link to its backend data center.  If its backend link degrades or fails, the application will take the CDN router offline by withdrawing its route advertisements to the internet.
 
 The application solves the end goal by checking a link that connects back to the data center and ensuring that it is healthy. The link is determined to be healthy using [iPerf](https://iperf.fr/) based on parameters such as jitter, bandwidth, packet loss, and dropped packets. If the link is determined to be unhealthy, then the link connecting to the internet would be flushed using [gRPC](http://www.grpc.io/) based on a user defined AS and policy.
 
@@ -18,7 +18,7 @@ The application solves the end goal by checking a link that connects back to the
 
 Cisco IOS-XR box running version 6.1.2 and above.
 
-Pipedown is meant to be run in a Linux container on the IOS-XR. It has been tested on an Ubuntu 14.04 container running Python 2.7. If you run Pipedown in a different scenario we welcome any feedback you have.
+This version of Pipedown has been developed to run in a Linux container on the IOS-XR. It has been tested on an Ubuntu 14.04 container running Python 2.7. If you run Pipedown in a different scenario we welcome any feedback you have.
 
 Pipedown attempts to be compatible with Python 3 wherever possible, but since gRPC does not officially support Python 3 yet Python 2.7 should be used. 
 
@@ -188,6 +188,10 @@ Use the following command to launch iPerf:
 
 
 ```iperf -s -B 10.1.1.2 -u```
+
+## Attribution
+
+The Pipedown project came about as an effort to give network operators an onboard toolset to diagnose, and potentially mitigate problems that arise due to the fact that router control plane applications (BGP, ISIS, etc.) do not have a complete and holistic understanding of network health.  This problem space is well articulated Tim Hoffman and Micah Croff’s NANOG 67 presentation: [Suffering Withdrawal An automated approach to connectivity](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwi8vdTk_6vTAhVTImMKHRmjBPkQFggjMAA&url=https%3A%2F%2Fwww.nanog.org%2Fsites%2Fdefault%2Ffiles%2FHoffman_Suffering_Withdrawal.pdf&usg=AFQjCNGiC4NZXl5RyPQgLrmY04p--48p8A&sig2=befyoVNqipkFmGyXmtR-Vw)
 
 ## License
 >You can check out the full license [here](https://github.com/cisco-ie/Pipedown/blob/master/LICENSE)
