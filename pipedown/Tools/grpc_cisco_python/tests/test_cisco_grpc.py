@@ -17,7 +17,7 @@ class CiscoGRPCClientcase(unittest.TestCase):
         self._result = self.client.getconfig(path)
         try:
             json_object = json.loads(self._result)
-        except ValueError, e:
+        except ValueError as e:
             self.assertTrue(False, e)
         self.assertTrue(True)
 
@@ -35,7 +35,7 @@ class CiscoGRPCClientcase(unittest.TestCase):
         self._result = self.client.getoper(path)
         try:
             json_object = json.loads(self._result)
-        except ValueError, e:
+        except ValueError as e:
             self.assertTrue(False, e)
         self.assertTrue(True)
 
