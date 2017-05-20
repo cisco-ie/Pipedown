@@ -6,7 +6,7 @@ Vagrant.configure(2) do |config|
 
     # Data Center router
     config.vm.define "rtr1" do |node|
-      node.vm.box =  "IOS XRv"
+      node.vm.box =  "IOS-XRv"
       # gig0/0/0/0 connected to link1, auto-config not supported.
       node.vm.network :private_network, virtualbox__intnet: "link1", auto_config: false
       node.vm.provision :shell, path: "scripts/iperf.sh"
@@ -48,7 +48,8 @@ Vagrant.configure(2) do |config|
     end
     # PoP router
     config.vm.define "rtr2" do |node|
-      node.vm.box =  "IOS XRv"
+      config.ssh.insert_key = false
+      node.vm.box =  "IOS-XRv"
       node.vm.network :private_network, virtualbox__intnet: "link2", auto_config: false
       node.vm.network :private_network, virtualbox__intnet: "link3", auto_config: false
       node.vm.provider "virtualbox" do |v|
