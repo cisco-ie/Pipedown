@@ -188,7 +188,8 @@ Use the following command to launch iPerf:
 
 
 ```iperf -s -B 10.1.1.2 -u```
-
+## Demo
+![pipedown_small](https://user-images.githubusercontent.com/15367209/27199009-4ee07570-51c9-11e7-8e64-fe7050a7d83f.gif)
 ## Attribution
 
 The Pipedown project came about as an effort to give network operators an onboard toolset to diagnose, and potentially mitigate problems that arise due to the fact that router control plane applications (BGP, ISIS, etc.) do not have a complete and holistic understanding of network health.  This problem space is well articulated Tim Hoffman and Micah Croff’s NANOG 67 presentation: [Suffering Withdrawal An automated approach to connectivity](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwi8vdTk_6vTAhVTImMKHRmjBPkQFggjMAA&url=https%3A%2F%2Fwww.nanog.org%2Fsites%2Fdefault%2Ffiles%2FHoffman_Suffering_Withdrawal.pdf&usg=AFQjCNGiC4NZXl5RyPQgLrmY04p--48p8A&sig2=befyoVNqipkFmGyXmtR-Vw)
